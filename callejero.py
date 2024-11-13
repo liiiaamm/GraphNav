@@ -18,8 +18,10 @@ Complétese esta descripción según las funcionalidades agregadas por el grupo.
 import osmnx as ox
 import networkx as nx
 import pandas as pd
-
+import re
 from typing import Tuple
+
+
 
 STREET_FILE_NAME="direcciones.csv"
 
@@ -55,6 +57,25 @@ class AdressNotFoundError(Exception):
 ############## Parte 2 ##############
 
 
+def conversion_to_number(pattern,x):
+    match=re.search(pattern,x)
+    if match:
+        try: 
+            degrees = float(match.group(1))
+            minutes = float(match.group(2))
+            seconds = float(match.group(3))
+        except ValueError:
+            print("Los valores no son enteros, no se puede hacer la conversión")
+            return None
+        direction = match.group(4)
+        conversion = degrees*(minutes/60)*(seconds/3600)
+        if direction in ["S","W"]:
+            return -1*conversion
+        return conversion
+    else:
+        print("Los datos no tienen el formato correcto")
+        return None
+    
 def carga_callejero() -> pd.DataFrame:
     """ Función que carga el callejero de Madrid, lo procesa y devuelve
     un DataFrame con los datos procesados
@@ -68,12 +89,24 @@ def carga_callejero() -> pd.DataFrame:
     """
     try:
 
-        df = pd.read_csv("direcciones.csv", sep=";", usecols=["VIA CLASE", "VIA PAR", "VIA NOMBRE", "NUMERO", "LATITUD", "LONGITUD"])
-    
+        df = pd.read_csv("direcciones.csv", sep=";", encoding="ISO-8859-1",usecols=["VIA_CLASE", "VIA_PAR", "VIA_NOMBRE", "NUMERO", "LATITUD", "LONGITUD"])
+        
+
+        
     except Exception as e:
         FileNotFoundError("EL fichero no existe")
-        
-    pass
+    copy = df.copy()
+    pattern = r"(\d{1,3})°(\d{1,2})'(\d{1,2}\.?\d*)''\s(\w)"
+
+    copy["LATITUD"] = copy["LATITUD"].apply(lambda x: conversion_to_number(pattern,x))
+    copy["LONGITUD"] = copy['LONGITUD'].apply(lambda x: conversion_to_number(pattern,x))
+    return copy 
+       
+callejero=carga_callejero()
+
+print(callejero)
+
+
 
 
 
@@ -95,7 +128,28 @@ def busca_direccion(direccion:str, callejero:pd.DataFrame) -> Tuple[float,float]
         busca_direccion("Calle de Alberto Aguilera, 23", data)=(40.42998055555555,3.7112583333333333)
         busca_direccion("Calle de Alberto Aguilera, 25", data)=(40.43013055555555,3.7126916666666667)
     """
-    pass
+    street,number = direccion.split(",")
+    callejero["total_street"] = callejero["VIA_CLASE"] + " " + callejero["VIA_PAR"].fillna("") + " " + callejero["VIA_NOMBRE"]
+    
+    street_coincidence = callejero[callejero['total_street'] == street.upper()] 
+    number_coincidence = street_coincidence[street_coincidence["NUMERO"]==int(number)]
+    print(number_coincidence)
+    try:
+
+        if len(number_coincidence) <=0:
+            raise AdressNotFoundError("La calle no fue encontrada")
+        else:
+            return (number_coincidence["LATITUD"].iloc[0],number_coincidence["LONGITUD"].iloc[0])
+        
+
+    except AdressNotFoundError as a_e:
+        print(a_e)
+
+direccion = "Calle de Alberto Aguilera, 1"
+print(busca_direccion(direccion,callejero))
+
+
+
 
 
 
