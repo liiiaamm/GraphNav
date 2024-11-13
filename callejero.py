@@ -4,10 +4,10 @@ callejero.py
 Matemática Discreta - IMAT
 ICAI, Universidad Pontificia Comillas
 
-Grupo: GPxxx
+Grupo: GP05A
 Integrantes:
-    - XX
-    - XX
+    - Liam Esgueva González
+    - Sergio Fernandez Cordero
 
 Descripción:
 Librería con herramientas y clases auxiliares necesarias para la representación de un callejero en un grafo.

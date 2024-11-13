@@ -4,10 +4,10 @@ grafo.py
 Matemática Discreta - IMAT
 ICAI, Universidad Pontificia Comillas
 
-Grupo: GPxxx
+Grupo: GP05A
 Integrantes:
-    - XX
-    - XX
+    - Liam Esgueva González
+    - Sergio Fernandez Cordero
 
 Descripción:
 Librería para el análisis de grafos pesados.
