@@ -66,6 +66,13 @@ def carga_callejero() -> pd.DataFrame:
     Raises:
         FileNotFoundError si el fichero csv con las direcciones no existe
     """
+    try:
+
+        df = pd.read_csv("direcciones.csv", sep=";", usecols=["VIA CLASE", "VIA PAR", "VIA NOMBRE", "NUMERO", "LATITUD", "LONGITUD"])
+    
+    except Exception as e:
+        FileNotFoundError("EL fichero no existe")
+        
     pass
 
 
