@@ -21,6 +21,7 @@ import pandas as pd
 import re
 from typing import Tuple
 
+import os
 
 
 STREET_FILE_NAME="direcciones.csv"
@@ -164,7 +165,21 @@ def carga_grafo() -> nx.MultiDiGraph:
     Raises:
         ServiceNotAvailableError: Si no es posible recuperar el grafo de OpenStreetMap.
     """
-    pass
+    graph_file = "madrid.graphml"
+    try:
+        if os.path.exists(graph_file):
+            print(f"Cargando grafo desde el archivo {graph_file}")
+            graph = ox.load_graphml(graph_file)
+        else:
+            print("Descargando grafo desde OpenStreetMap...")
+            graph = ox.graph_from_place("Madrid, Spain",network_type="drive")
+            ox.save_graphml(graph,graph_file)
+            print(f"Grafo guardado exitosamente en {graph_file}")
+            return graph
+        
+    except Exception as e:
+        raise ServiceNotAvailableError("No se pudo recuperar el grafo de OpenStreetMap")
+    
 
 
 def procesa_grafo(multidigrafo:nx.MultiDiGraph) -> nx.DiGraph:
@@ -175,4 +190,52 @@ def procesa_grafo(multidigrafo:nx.MultiDiGraph) -> nx.DiGraph:
         nx.DiGraph: Grafo dirigido y sin bucles asociado al multidigrafo dado.
     Raises: None
     """
+    directed_graph = ox.get_digraph(multidigrafo)
+    loops = list(nx.selfloop_edges(directed_graph))
+    for loop in loops:
+
+        directed_graph.remove_edge(loop)
+
+    
+def explora_grafo(graph:nx.DiGraph)->None:
+    """
+    Explora los datos de nodos y aristas del grafo y lo dibuja basado en la posición geográfica.
+    
+    Args:
+        grafo: Grafo dirigido (`DiGraph`) a explorar y dibujar.
+    
+    Returns:
+        None: Imprime la información en la consola y muestra el grafo visualizado.
+    """
+    #Exploración de los nodos
+    print("Exploramos los nodos: \n")
+    print(f"El total de nodos es: {graph.number_of_nodes()}")
+    
+    #Atributos de nodo
+    for node,data in graph.nodes(data=True):
+        n_example = (node,data)
+        break
+    print(f"Atributos de un nodo de ejemplo (Nodo {n_example[0]}): {n_example[1]}")
+    node_pos = [n for n,data in graph.nodes(data=True) if "x" not in data or "y" not in data]
+    if node_pos:
+        print(f"El número de nodos que no tiene infomración geográfica es: {len(node_pos)}")
+
+    else:
+        print("Todos los nodos tienen información geográfica")
+
+    print("Exploramos las aristas: \n")
+    print(f"El total de aristas es: {graph.number_of_edges()}")
+    
+    #Atributos de nodo
+    for edge,data in graph.edges(data=True):
+        e_example = (node,data)
+        break
+    print(f"Atributos de una arista de ejemplo (Nodo {e_example[0]}): {e_example[1]}")
+    edge_len = [edge for u,v,data in graph.edges(data=True) if "length" not in data]
+    if edge_len:
+        print(f"El numero de aristas que no tienen longitud es: {len(edge_len)}")
+    else:
+        print("Todas las aristas tienen información de longitud.")
+
+def dibuja_grafo(graph:nx.DiGraph) -> None:
     pass
