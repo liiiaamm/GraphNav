@@ -237,5 +237,13 @@ def explora_grafo(graph:nx.DiGraph)->None:
     else:
         print("Todas las aristas tienen información de longitud.")
 
-def dibuja_grafo(graph:nx.DiGraph) -> None:
-    pass
+def dibuja_grafo(graph:nx.DiGraph,default=False) -> None:
+    """
+    Dibuja un grafo
+
+    Args:
+        graph (nx.DiGraph): grafo de las calles de Madrid
+        default (bool, optional): Defaults to False.
+    """
+    nx.draw(G=graph,with_labels=True,node_color="lightblue",node_size=500,font_weight="bold")
+
