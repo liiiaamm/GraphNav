@@ -20,6 +20,8 @@ import networkx as nx
 import pandas as pd
 import re
 from typing import Tuple
+import matplotlib.pyplot as plt
+
 
 import os
 
@@ -190,11 +192,11 @@ def procesa_grafo(multidigrafo:nx.MultiDiGraph) -> nx.DiGraph:
         nx.DiGraph: Grafo dirigido y sin bucles asociado al multidigrafo dado.
     Raises: None
     """
-    directed_graph = ox.get_digraph(multidigrafo)
+    directed_graph = ox.utils_graph.convert.to_digraph(multidigrafo)
     loops = list(nx.selfloop_edges(directed_graph))
-    for loop in loops:
+    for u,v in loops:
 
-        directed_graph.remove_edge(loop)
+        directed_graph.remove_edge(u,v)
 
     
 def explora_grafo(graph:nx.DiGraph)->None:
@@ -246,4 +248,7 @@ def dibuja_grafo(graph:nx.DiGraph,default=False) -> None:
         default (bool, optional): Defaults to False.
     """
     nx.draw(G=graph,with_labels=True,node_color="lightblue",node_size=500,font_weight="bold")
+
+    plt.show()
+
 
