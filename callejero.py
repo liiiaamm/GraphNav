@@ -170,12 +170,18 @@ def carga_grafo() -> nx.MultiDiGraph:
         if os.path.exists(MAP_FILE_NAME):
             print(f"Cargando grafo desde el archivo {MAP_FILE_NAME}")
             graph = ox.load_graphml(MAP_FILE_NAME)
+            if not isinstance(graph, nx.MultiDiGraph):
+                print("El argumento 'multidigrafo' debe ser un nx.MultiDiGraph.")
+                print("hola")
         else:
             print("Descargando grafo desde OpenStreetMap...")
             graph = ox.graph_from_place(PLACE_NAME,network_type="drive")
             ox.save_graphml(graph,MAP_FILE_NAME)
             print(f"Grafo guardado exitosamente en {MAP_FILE_NAME}")
-            return graph
+            if not isinstance(graph, nx.MultiDiGraph):
+                    print("El argumento 'multidigrafo' debe ser un nx.MultiDiGraph.")
+        # fig, ax = ox.plot_graph(graph, node_size=0, edge_linewidth=0.5)
+        return graph
         
     except Exception as e:
         raise ServiceNotAvailableError("No se pudo recuperar el grafo de OpenStreetMap")
@@ -190,13 +196,19 @@ def procesa_grafo(multidigrafo:nx.MultiDiGraph) -> nx.DiGraph:
         nx.DiGraph: Grafo dirigido y sin bucles asociado al multidigrafo dado.
     Raises: None
     """
-    directed_graph = ox.utils_graph.convert.to_digraph(multidigrafo)
-    loops = list(nx.selfloop_edges(directed_graph))
-    for u,v in loops:
+    if not isinstance(multidigrafo, nx.MultiDiGraph):
+        print("El argumento 'multidigrafo' debe ser un nx.MultiDiGraph.")
+    directed_graph = ox.convert.to_digraph(multidigrafo)
+    print("termino de procesar")
+    loops = list(nx.selfloop_edges(directed_graph))  # Encuentra los bucles
+    directed_graph.remove_edges_from(loops)  # Elimina todos los bucles de una vez
+    print("termino de eliminar bucles")
 
-        directed_graph.remove_edge(u,v)
 
-    
+    if not isinstance(directed_graph, nx.DiGraph):
+        print("No se construyo bien")
+    return directed_graph
+
 def explora_grafo(graph:nx.DiGraph)->None:
     """
     Explora los datos de nodos y aristas del grafo y lo dibuja basado en la posición geográfica.
@@ -227,26 +239,17 @@ def explora_grafo(graph:nx.DiGraph)->None:
     print(f"El total de aristas es: {graph.number_of_edges()}")
     
     #Atributos de nodo
-    for edge,data in graph.edges(data=True):
-        e_example = (node,data)
+    for u, v, data in graph.edges(data=True):
+        e_example = (u,v,data)
         break
-    print(f"Atributos de una arista de ejemplo (Nodo {e_example[0]}): {e_example[1]}")
-    edge_len = [edge for u,v,data in graph.edges(data=True) if "length" not in data]
+    print(f"Atributos de una arista de ejemplo (Nodo {e_example[0:1]}): {e_example[2]}")
+    edge_len = [(u,v) for u,v,data in graph.edges(data=True) if "length" not in data]
     if edge_len:
         print(f"El numero de aristas que no tienen longitud es: {len(edge_len)}")
     else:
         print("Todas las aristas tienen información de longitud.")
 
-def dibuja_grafo(graph:nx.DiGraph,default=False) -> None:
-    """
-    Dibuja un grafo
-
-    Args:
-        graph (nx.DiGraph): grafo de las calles de Madrid
-        default (bool, optional): Defaults to False.
-    """
-    nx.draw(G=graph,with_labels=True,node_color="lightblue",node_size=500,font_weight="bold")
-
+    pos = {nodo: (datos["x"], datos["y"]) for nodo, datos in graph.nodes(data=True)}
+    plt.figure(figsize=(10, 10))
+    nx.draw(graph, pos, node_size=10, edge_color="gray", with_labels=False)
     plt.show()
-
-

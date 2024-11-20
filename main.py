@@ -11,6 +11,6 @@ if __name__=="__main__":
     direction=c.busca_direccion("Calle de Alberto Aguilera, 1",street)
     graph=c.carga_grafo()
     directed_graph=c.procesa_grafo(graph)
-    c.dibuja_grafo(graph)
+    c.explora_grafo(directed_graph)
 
 
