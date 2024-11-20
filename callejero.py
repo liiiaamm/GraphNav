@@ -242,7 +242,7 @@ def explora_grafo(graph:nx.DiGraph)->None:
     for u, v, data in graph.edges(data=True):
         e_example = (u,v,data)
         break
-    print(f"Atributos de una arista de ejemplo (Nodo {e_example[0:1]}): {e_example[2]}")
+    print(f"Atributos de una arista de ejemplo (Nodo {e_example[0],e_example[1]}): {e_example[2]}")
     edge_len = [(u,v) for u,v,data in graph.edges(data=True) if "length" not in data]
     if edge_len:
         print(f"El numero de aristas que no tienen longitud es: {len(edge_len)}")
