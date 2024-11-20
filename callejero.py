@@ -7,8 +7,7 @@ ICAI, Universidad Pontificia Comillas
 Grupo: GP05A
 Integrantes:
     - Liam Esgueva González
-    - Sergio Fernandez Cordero
-
+    
 Descripción:
 Librería con herramientas y clases auxiliares necesarias para la representación de un callejero en un grafo.
 
@@ -92,7 +91,7 @@ def carga_callejero() -> pd.DataFrame:
     """
     try:
 
-        df = pd.read_csv("direcciones.csv", sep=";", encoding="ISO-8859-1",usecols=["VIA_CLASE", "VIA_PAR", "VIA_NOMBRE", "NUMERO", "LATITUD", "LONGITUD"])
+        df = pd.read_csv(STREET_FILE_NAME, sep=";", encoding="ISO-8859-1",usecols=["VIA_CLASE", "VIA_PAR", "VIA_NOMBRE", "NUMERO", "LATITUD", "LONGITUD"])
         
 
         
@@ -167,16 +166,15 @@ def carga_grafo() -> nx.MultiDiGraph:
     Raises:
         ServiceNotAvailableError: Si no es posible recuperar el grafo de OpenStreetMap.
     """
-    graph_file = "madrid.graphml"
     try:
-        if os.path.exists(graph_file):
-            print(f"Cargando grafo desde el archivo {graph_file}")
-            graph = ox.load_graphml(graph_file)
+        if os.path.exists(MAP_FILE_NAME):
+            print(f"Cargando grafo desde el archivo {MAP_FILE_NAME}")
+            graph = ox.load_graphml(MAP_FILE_NAME)
         else:
             print("Descargando grafo desde OpenStreetMap...")
-            graph = ox.graph_from_place("Madrid, Spain",network_type="drive")
-            ox.save_graphml(graph,graph_file)
-            print(f"Grafo guardado exitosamente en {graph_file}")
+            graph = ox.graph_from_place(PLACE_NAME,network_type="drive")
+            ox.save_graphml(graph,MAP_FILE_NAME)
+            print(f"Grafo guardado exitosamente en {MAP_FILE_NAME}")
             return graph
         
     except Exception as e:
