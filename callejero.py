@@ -7,6 +7,7 @@ ICAI, Universidad Pontificia Comillas
 Grupo: GP05A
 Integrantes:
     - Liam Esgueva González
+    - Sergo Fernández Cordero
     
 Descripción:
 Librería con herramientas y clases auxiliares necesarias para la representación de un callejero en un grafo.
@@ -20,7 +21,7 @@ import pandas as pd
 import re
 from typing import Tuple
 import matplotlib.pyplot as plt
-
+from rapidfuzz import process
 
 import os
 
@@ -143,12 +144,46 @@ def busca_direccion(direccion:str, callejero:pd.DataFrame) -> Tuple[float,float]
         else:
             return (number_coincidence["LATITUD"].iloc[0],number_coincidence["LONGITUD"].iloc[0])
         
-
     except AdressNotFoundError as a_e:
         print(a_e)
 
 direccion = "Calle de Alberto Aguilera, 1"
 print(busca_direccion(direccion,callejero))
+
+
+def fuzzy_search(direccion:str, callejero:pd.DataFrame, threshold:float) -> Tuple[float,float]:
+    """
+    Función que realiza una búsqueda aproximada de una dirección en el callejero.
+    
+    Args:
+        direccion (str): Nombre completo de la calle con número, en formato "Calle, num".
+        callejero (DataFrame): DataFrame con la información de las calles.
+        threshold (float): Porcentaje de similitud necesario para que la coincidencia se detecte.
+        
+    Returns:
+        Tuple[float, float]: Par de float (latitud, longitud) de la dirección más cercana encontrada.
+        
+    Raises:
+        AdressNotFoundError: Si no se encuentra una coincidencia suficiente.
+    """
+    street, number = direccion.split(",")
+    number = int(number.strip())
+    callejero["total_street"] = callejero["VIA_CLASE"] + " " + callejero["VIA_PAR"].fillna("") + " " + callejero["VIA_NOMBRE"]
+    best_match = process.extractOne(street.upper(), callejero["total_street"].unique().tolist())
+
+    if best_match and best_match[1] >= threshold:
+
+        matched_street = best_match[0]
+        street_coincidence = callejero[callejero["total_street"] == matched_street]
+        number_coincidence = street_coincidence[street_coincidence["NUMERO"] == number]
+        
+        if not number_coincidence.empty:
+            return (number_coincidence["LATITUD"].iloc[0], number_coincidence["LONGITUD"].iloc[0])
+        else:
+            raise AdressNotFoundError(f"No se encontró el número {number} en {matched_street}.")
+        
+    else:
+        raise AdressNotFoundError("No se encontró una dirección similar en el callejero.")
 
 
 
