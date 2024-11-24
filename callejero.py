@@ -215,7 +215,7 @@ def carga_grafo() -> nx.MultiDiGraph:
             print(f"Grafo guardado exitosamente en {MAP_FILE_NAME}")
             if not isinstance(graph, nx.MultiDiGraph):
                     print("El argumento 'multidigrafo' debe ser un nx.MultiDiGraph.")
-        # fig, ax = ox.plot_graph(graph, node_size=0, edge_linewidth=0.5)
+        fig, ax = ox.plot_graph(graph, node_size=0, edge_linewidth=0.5)
         return graph
         
     except Exception as e:
@@ -238,7 +238,7 @@ def procesa_grafo(multidigrafo:nx.MultiDiGraph) -> nx.DiGraph:
     loops = list(nx.selfloop_edges(directed_graph))  # Encuentra los bucles
     directed_graph.remove_edges_from(loops)  # Elimina todos los bucles de una vez
     print("termino de eliminar bucles")
-
+    
 
     if not isinstance(directed_graph, nx.DiGraph):
         print("No se construyo bien")
