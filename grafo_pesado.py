@@ -41,7 +41,10 @@ def dijkstra(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,object
     el árbol de la componente conexa que contiene a "origen".
     
     Args:
-        origen (object): vértice del grafo de origen
+        G (Union[nx.Graph, nx.DiGraph]): El grafo (puede ser dirigido o no).
+        peso (Union[Callable, Callable]): Función de peso que recibe el grafo y dos vértices
+                                          y devuelve el peso de la arista entre esos vértices.
+        origen (object): vértice del grafo de origen.
     Returns:
         Dict[object,object]: Devuelve un diccionario que indica, para cada vértice alcanzable
             desde "origen", qué vértice es su padre en el árbol de caminos mínimos.
@@ -51,7 +54,30 @@ def dijkstra(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,object
         Si G.dijksra(1)={2:1, 3:2, 4:1} entonces 1 es padre de 2 y de 4 y 2 es padre de 3.
         En particular, un camino mínimo desde 1 hasta 3 sería 1->2->3.
     """
-    pass
+    
+    padre = {v: None for v in G.nodes}  
+    d = {v: float('inf') for v in G.nodes}  
+    visitado = {v: False for v in G.nodes}  
+
+    d[origen] = 0
+    Q = [(0, origen)]
+    heapq.heapify(Q)
+
+    while Q:
+        dist_v, v = heapq.heappop(Q)
+
+        if not visitado[v]:
+            visitado[v] = True
+
+            for vecino in G.neighbors(v):
+                w = peso(G, v, vecino)
+
+                if d[vecino] > d[v] + w:
+                    d[vecino] = d[v] + w
+                    padre[vecino] = v
+                    heapq.heappush(Q, (d[vecino], vecino))
+
+    return padre
 
 
 def camino_minimo(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,object,object],float], Callable[[nx.DiGraph,object,object],float]] ,origen:object,destino:object)->List[object]:
