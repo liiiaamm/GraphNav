@@ -137,47 +137,37 @@ def prim(G: nx.Graph, peso: Callable[[nx.Graph, object, object], float]) -> Dict
         Dict[object, object]: Diccionario que indica el padre de cada nodo en el Árbol Abarcador Mínimo.
                               Los nodos raíces tendrán `None` como padre.
     """
-    # Diccionario para almacenar el padre de cada nodo en el árbol abarcador mínimo
-    padre = {v: None for v in G.nodes}
-    # Diccionario para almacenar el coste mínimo hacia cada nodo
+    # Diccionarios de padre y coste mínimo para cada nodo
+    padre = {v: None for v in G.nodes}  
     coste_minimo = {v: float('inf') for v in G.nodes}
-    # Conjunto para rastrear los nodos visitados
+    
+    # Iniciamos el algoritmo desde un vértice arbitrario (usamos el primer nodo)
+    raiz = list(G.nodes)[0]
+    coste_minimo[raiz] = 0  # El costo del nodo raíz es 0
+    
+    # Lista de nodos visitados
     visitado = set()
-
-    # Seleccionamos un nodo inicial arbitrario
-    nodo_inicial = next(iter(G.nodes))
-    coste_minimo[nodo_inicial] = 0
-
-    # Cola de prioridad: (coste, nodo, padre)
-    Q = [(0, nodo_inicial, None)]
-    heapq.heapify(Q)
-
-    while Q:
-        # Extraemos el nodo con el menor coste
-        coste_actual, nodo_actual, padre_actual = heapq.heappop(Q)
-
-        # Si ya ha sido visitado, lo ignoramos
-        if nodo_actual in visitado:
-            continue
-
-        # Marcamos el nodo como visitado
-        visitado.add(nodo_actual)
-
-        # Actualizamos el padre del nodo
-        if padre_actual is not None:
-            padre[nodo_actual] = padre_actual
-
-        # Procesamos los vecinos del nodo actual
-        for vecino in G.neighbors(nodo_actual):
+    
+    while len(visitado) < len(G.nodes):
+        # Seleccionamos el nodo con el coste mínimo
+        v = None
+        for nodo in G.nodes:
+            if nodo not in visitado:
+                if v is None or coste_minimo[nodo] < coste_minimo[v]:
+                    v = nodo
+        
+        # Marcar el nodo como visitado
+        visitado.add(v)
+        
+        # Explorar los vecinos del nodo seleccionado
+        for vecino in G.neighbors(v):
             if vecino not in visitado:
-                # Obtenemos el peso de la arista
-                w = peso(G, nodo_actual, vecino)
-
-                # Si encontramos un camino más barato, lo actualizamos
+                w = peso(G, v, vecino)
+                # Si encontramos un camino más barato hacia el vecino, actualizamos
                 if w < coste_minimo[vecino]:
                     coste_minimo[vecino] = w
-                    heapq.heappush(Q, (w, vecino, nodo_actual))
-
+                    padre[vecino] = v
+    
     return padre
 
 
