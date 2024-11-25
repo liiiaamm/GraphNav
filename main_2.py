@@ -5,6 +5,7 @@ import callejero as c
 class AdressNotFoundError(Exception):
     """Excepción personalizada para direcciones no encontradas."""
     pass
+
 def seleccion_interactiva(callejero: pd.DataFrame, threshold: float = 80) -> Tuple[str, Tuple[float, float]]:
     """
     Permite al usuario introducir la dirección de forma interactiva con sugerencias en tiempo real.
@@ -22,7 +23,7 @@ def seleccion_interactiva(callejero: pd.DataFrame, threshold: float = 80) -> Tup
             direction_input = input("Dirección: ").strip()
             print("Búsquedas recientes: ")
             with open("search/recent_searchs.txt","r") as s:
-                for line in s.readlines():
+                for line in s.readlines()[::-1]:
                     print(line.rstrip())
 
             while "," not in direction_input:
