@@ -105,9 +105,7 @@ def carga_callejero() -> pd.DataFrame:
     copy["LONGITUD"] = copy['LONGITUD'].apply(lambda x: conversion_to_number(pattern,x))
     return copy 
        
-callejero=carga_callejero()
 
-print(callejero)
 
 
 
@@ -147,8 +145,7 @@ def busca_direccion(direccion:str, callejero:pd.DataFrame) -> Tuple[float,float]
     except AdressNotFoundError as a_e:
         print(a_e)
 
-direccion = "Calle de Alberto Aguilera, 1"
-print(busca_direccion(direccion,callejero))
+
 
 
 def fuzzy_search(direccion:str, callejero:pd.DataFrame, threshold:float) -> Tuple[float,float]:
