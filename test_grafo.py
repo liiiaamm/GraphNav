@@ -61,7 +61,7 @@ for a in aristas:
 
 if(1==1):
     #Dijkstra y camino mínimo con peso constante
-    acm=grafo_pesado.dijkstra(G,peso_aleatorio,1)
+    acm=grafo_pesado.camino_minimo(G,peso_aleatorio,1,6)
     print(acm)
 
 if(1!=1):
