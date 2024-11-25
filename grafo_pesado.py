@@ -98,7 +98,22 @@ def camino_minimo(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,o
     Raises:
         TypeError: Si origen o destino no son "hashable".
     """
-    pass
+    min_rout = [destino]
+
+    try:
+        acm=dijkstra(G,peso,origen)
+    except:
+        raise TypeError("El origen o el destino no es hashable")
+    
+    if destino not in acm or acm[destino] is None:
+        raise TypeError("El destino introducido no está en el grafo")
+    
+    while min_rout[-1] != origen:
+        parent = acm[min_rout[-1]]
+        min_rout.append(parent)
+        
+    min_rout.reverse()
+    return min_rout
 
 
 def prim(G:nx.Graph, peso:Callable[[nx.Graph,object,object],float])-> Dict[object,object]:
