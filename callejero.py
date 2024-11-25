@@ -22,7 +22,6 @@ import re
 from typing import Tuple
 import matplotlib.pyplot as plt
 from rapidfuzz import process
-
 import os
 
 
@@ -130,6 +129,7 @@ def busca_direccion(direccion:str, callejero:pd.DataFrame) -> Tuple[float,float]
         busca_direccion("Calle de Alberto Aguilera, 25", data)=(40.43013055555555,3.7126916666666667)
     """
     street,number = direccion.split(",")
+    copy = callejero.copy()
     callejero["total_street"] = callejero["VIA_CLASE"] + " " + callejero["VIA_PAR"].fillna("") + " " + callejero["VIA_NOMBRE"]
     
     street_coincidence = callejero[callejero['total_street'] == street.upper()] 
@@ -148,7 +148,7 @@ def busca_direccion(direccion:str, callejero:pd.DataFrame) -> Tuple[float,float]
 
 
 
-def fuzzy_search(direccion:str, callejero:pd.DataFrame, threshold:float) -> Tuple[float,float]:
+def fuzzy_search(direccion:str, callejero:pd.DataFrame, threshold=80) -> Tuple[float,float]:
     """
     Función que realiza una búsqueda aproximada de una dirección en el callejero.
     
