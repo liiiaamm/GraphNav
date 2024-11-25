@@ -59,35 +59,33 @@ for a in aristas:
     print(a[0],a[1],":",G[a[0]][a[1]])
 
 
-if(1==1):
-    #Dijkstra y camino mínimo con peso constante
-    acm=grafo_pesado.camino_minimo(G,peso_aleatorio,1,6)
-    print(acm)
+# Dijkstra y camino mínimo con peso constante
+acm=grafo_pesado.dijkstra(G,peso_constante,1)
+print(acm)
 
-if(1!=1):
-    camino=grafo_pesado.camino_minimo(G,peso_constante,1,5)
-    print(camino)
+camino=grafo_pesado.camino_minimo(G,peso_constante,1,6)
+print(camino)
 
-    #Dijkstra y camino mínimo con peso aleatorio
-    acm_rng=grafo_pesado.dijkstra(G,peso_aleatorio,1)
-    print(acm_rng)
+# Dijkstra y camino mínimo con peso aleatorio
+acm_rng=grafo_pesado.dijkstra(G,peso_aleatorio,1)
+print(acm_rng)
 
-    camino_rng=grafo_pesado.camino_minimo(G,peso_aleatorio,1,5)
-    print(camino_rng)
+camino_rng=grafo_pesado.camino_minimo(G,peso_aleatorio,1,6)
+print(camino_rng)
 
 
 
-    if(not dirigido):
-        #Árbol abarcador mínimo
-        aam=grafo_pesado.kruskal(G,peso_constante)
-        print(aam)
+if(not dirigido):
+    #Árbol abarcador mínimo
+    aam=grafo_pesado.kruskal(G,peso_constante)
+    print(aam)
 
-        aam2=grafo_pesado.prim(G,peso_constante)
-        print(aam2)
+    aam2=grafo_pesado.prim(G,peso_constante)
+    print(aam2)
 
 
-        aam_rng=grafo_pesado.kruskal(G,peso_aleatorio)
-        print(aam_rng)
+    aam_rng=grafo_pesado.kruskal(G,peso_aleatorio)
+    print(aam_rng)
 
-        aam2_rng=grafo_pesado.prim(G,peso_aleatorio)
-        print(aam2_rng)
+    aam2_rng=grafo_pesado.prim(G,peso_aleatorio)
+    print(aam2_rng)

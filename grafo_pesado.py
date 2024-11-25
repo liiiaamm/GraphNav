@@ -55,27 +55,33 @@ def dijkstra(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,object
         En particular, un camino mínimo desde 1 hasta 3 sería 1->2->3.
     """
     
-    padre = {v: None for v in G.nodes}  
-    d = {v: float('inf') for v in G.nodes}  
-    visitado = {v: False for v in G.nodes}  
+    try:
+        hash(origen)
+    except TypeError:
+        raise TypeError("El origen no es hashable. Usa un tipo inmutable como int, str, tuple, etc.")
+
+    padre = {v: None for v in G.nodes}
+    d = {v: float('inf') for v in G.nodes}
+    visitado = {v: False for v in G.nodes}
 
     d[origen] = 0
-    Q = [(0, origen)]
-    heapq.heapify(Q)
+    Q = list(G.nodes)  #Inicializamos la cola como una lista de nodos
 
     while Q:
-        dist_v, v = heapq.heappop(Q)
+        #Encontrar el nodo con la menor distancia en Q
+        v = min(Q, key=lambda node: d[node])
 
-        if not visitado[v]:
-            visitado[v] = True
+        Q.remove(v)  #Eliminarlo de la cola
+        visitado[v] = True
 
-            for vecino in G.neighbors(v):
+        for vecino in G.neighbors(v):
+            if not visitado[vecino]:
                 w = peso(G, v, vecino)
 
+                #Relajación de la arista
                 if d[vecino] > d[v] + w:
                     d[vecino] = d[v] + w
                     padre[vecino] = v
-                    heapq.heappush(Q, (d[vecino], vecino))
 
     return padre
 
@@ -116,24 +122,66 @@ def camino_minimo(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,o
     return min_rout
 
 
-def prim(G:nx.Graph, peso:Callable[[nx.Graph,object,object],float])-> Dict[object,object]:
-    """ Calcula un Árbol Abarcador Mínimo para el grafo pesado
-    usando el algoritmo de Prim.
-    
-    Args: None
-    Returns:
-        G (nx.Graph): grafo
-        peso (función): función que recibe un grafo y dos vértices del grafo y devuelve el peso de la arista que los conecta
-        Dict[object,object]: Devuelve un diccionario que indica, para cada vértice del
-            grafo, qué vértice es su padre en el árbol abarcador mínimo.
-    Raises: None
-    Example:
-        Si prim(G,peso)={1: None, 2:1, 3:2, 4:1} entonces en un árbol abarcador mínimo tenemos que:
-            1 es una raíz (no tiene padre)
-            1 es padre de 2 y de 4
-            2 es padre de 3
+
+
+def prim(G: nx.Graph, peso: Callable[[nx.Graph, object, object], float]) -> Dict[object, object]:
     """
-    pass
+    Calcula un Árbol Abarcador Mínimo (o bosque si hay componentes desconexas)
+    para el grafo pesado usando el algoritmo de Prim.
+
+    Args:
+        G (nx.Graph): Grafo no dirigido.
+        peso (función): Función que recibe un grafo y dos vértices, y devuelve el peso de la arista que los conecta.
+
+    Returns:
+        Dict[object, object]: Diccionario que indica el padre de cada nodo en el Árbol Abarcador Mínimo.
+                              Los nodos raíces tendrán `None` como padre.
+    """
+    # Diccionario para almacenar el padre de cada nodo en el árbol abarcador mínimo
+    padre = {v: None for v in G.nodes}
+    # Diccionario para almacenar el coste mínimo hacia cada nodo
+    coste_minimo = {v: float('inf') for v in G.nodes}
+    # Conjunto para rastrear los nodos visitados
+    visitado = set()
+
+    # Seleccionamos un nodo inicial arbitrario
+    nodo_inicial = next(iter(G.nodes))
+    coste_minimo[nodo_inicial] = 0
+
+    # Cola de prioridad: (coste, nodo, padre)
+    Q = [(0, nodo_inicial, None)]
+    heapq.heapify(Q)
+
+    while Q:
+        # Extraemos el nodo con el menor coste
+        coste_actual, nodo_actual, padre_actual = heapq.heappop(Q)
+
+        # Si ya ha sido visitado, lo ignoramos
+        if nodo_actual in visitado:
+            continue
+
+        # Marcamos el nodo como visitado
+        visitado.add(nodo_actual)
+
+        # Actualizamos el padre del nodo
+        if padre_actual is not None:
+            padre[nodo_actual] = padre_actual
+
+        # Procesamos los vecinos del nodo actual
+        for vecino in G.neighbors(nodo_actual):
+            if vecino not in visitado:
+                # Obtenemos el peso de la arista
+                w = peso(G, nodo_actual, vecino)
+
+                # Si encontramos un camino más barato, lo actualizamos
+                if w < coste_minimo[vecino]:
+                    coste_minimo[vecino] = w
+                    heapq.heappush(Q, (w, vecino, nodo_actual))
+
+    return padre
+
+
+
                 
 
 def kruskal(G:nx.Graph, peso:Callable[[nx.Graph,object,object],float])-> List[Tuple[object,object]]:
