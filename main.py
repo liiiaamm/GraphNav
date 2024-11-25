@@ -28,15 +28,53 @@ def step_with_header(step_message, function_to_call=None, *args, **kwargs):
     if function_to_call:
         result = function_to_call(*args, **kwargs)  # Llama a la función con los argumentos proporcionados
         return result
+def seleccion_interactiva(callejero: pd.DataFrame) -> Tuple[str, Tuple[float, float]]:
+    """
+    Permite al usuario introducir la dirección de forma interactiva con sugerencias en tiempo real.
+    
+    Args:
+        callejero (DataFrame): DataFrame con las direcciones.
+        threshold (float): Umbral de similitud para las coincidencias aproximadas.
+        
+    Returns:
+        Tuple[str, Tuple[float, float]]: La dirección seleccionada y sus coordenadas (lat, lon).
+    """
+    while True:
+        try:
+            print("\nIntroduce el nombre de la calle seguido del número (ejemplo: 'Calle Mayor, 10'):")
+            direction_input = input("Dirección: ").strip()
+            print("Búsquedas recientes: ")
+            file_path = "searchs/recent_searchs.txt"
+
+            if not os.path.exists(file_path):
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                with open(file_path, "r") as s:
+                    print("Contenido del archivo:")
+                    for line in s.readlines()[::-1]:
+                        print(line.rstrip())
+            
+            coords = c.fuzzy_search(direction_input, callejero)
+            
+            print(f"\nSe encontró una coincidencia cercana para: '{direction_input}'")
+            print(f"Coordenadas: {coords}")
+            confirmacion = input("¿Es correcta esta dirección? (S/N): ").strip().lower()
+            if confirmacion == "s":
+                with open(file_path,"a") as s:
+                    s.write(direction_input +"\n")
+
+                return direction_input, coords
+        except c.AdressNotFoundError as e:
+            print(f"Error: {e}")
+            print("Por favor, intenta de nuevo con un nombre más completo o correcto.")
 
 
 def main():
     opt_title = input("Desea ver el título continuamente? Escribe S para ver el título continuamente")
     if opt_title.upper() == "S":
         print(GPS)
-        street = step_with_header("Cargando callejero...", c.carga_callejero)
+        streetmap = step_with_header("Cargando callejero...", c.carga_callejero)
         time.sleep(2)
-        direction = step_with_header("Buscando dirección: Calle de Alberto Aguilera, 1...", c.busca_direccion, "Calle de Alberto Aguilera, 1", street)
+        direction = step_with_header("Buscando dirección: Calle de Alberto Aguilera, 1...", seleccion_interactiva, streetmap)
         time.sleep(4)
         graph = step_with_header("Cargando grafo...", c.carga_grafo)
         time.sleep(2)
