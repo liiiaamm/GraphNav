@@ -129,12 +129,10 @@ def busca_direccion(direccion:str, callejero:pd.DataFrame) -> Tuple[float,float]
         busca_direccion("Calle de Alberto Aguilera, 25", data)=(40.43013055555555,3.7126916666666667)
     """
     street,number = direccion.split(",")
-    copy = callejero.copy()
     callejero["total_street"] = callejero["VIA_CLASE"] + " " + callejero["VIA_PAR"].fillna("") + " " + callejero["VIA_NOMBRE"]
     
     street_coincidence = callejero[callejero['total_street'] == street.upper()] 
-    number_coincidence = street_coincidence[street_coincidence["NUMERO"]==int(number)]
-    print(number_coincidence)
+    number_coincidence = street_coincidence[street_coincidence["NUMERO"]==int(number.strip())]
     try:
 
         if len(number_coincidence) <=0:
@@ -148,7 +146,7 @@ def busca_direccion(direccion:str, callejero:pd.DataFrame) -> Tuple[float,float]
 
 
 
-def fuzzy_search(direccion:str, callejero:pd.DataFrame, threshold=80) -> Tuple[float,float]:
+def fuzzy_search(direccion:str, callejero:pd.DataFrame, threshold=80) ->Tuple[float,float]:
     """
     Función que realiza una búsqueda aproximada de una dirección en el callejero.
     
@@ -159,26 +157,46 @@ def fuzzy_search(direccion:str, callejero:pd.DataFrame, threshold=80) -> Tuple[f
         
     Returns:
         Tuple[float, float]: Par de float (latitud, longitud) de la dirección más cercana encontrada.
-        
+        str: Dirección bien escrita
     Raises:
         AdressNotFoundError: Si no se encuentra una coincidencia suficiente.
     """
     street, number = direccion.split(",")
     number = int(number.strip())
-    callejero["total_street"] = callejero["VIA_CLASE"] + " " + callejero["VIA_PAR"].fillna("") + " " + callejero["VIA_NOMBRE"]
+    callejero["total_street"] = callejero["VIA_CLASE"] + " " + callejero["VIA_PAR"].fillna("") + " " + callejero["VIA_NOMBRE"] + "," + callejero["NUMERO"].astype(str)
+    best_match = process.extractOne(street.upper(), callejero["total_street"].unique().tolist())
+    
+    street, number = direccion.split(",")
+    number = int(number.strip())
+
+    # Crear columna total para la comparación
+    callejero["total_street"] = (
+        callejero["VIA_CLASE"] + " " + callejero["VIA_PAR"].fillna("") + " " + callejero["VIA_NOMBRE"]
+    )
+
+    # Realizar búsqueda fuzzy
     best_match = process.extractOne(street.upper(), callejero["total_street"].unique().tolist())
 
     if best_match and best_match[1] >= threshold:
-
         matched_street = best_match[0]
+        
         street_coincidence = callejero[callejero["total_street"] == matched_street]
-        number_coincidence = street_coincidence[street_coincidence["NUMERO"] == number]
+        # Filtrar las filas que coinciden con la calle encontrada
+        street_coincidence = street_coincidence.copy()
+        street_coincidence["distance"] = abs(street_coincidence["NUMERO"] - number)
+
+        # Comprobar si el número exacto está disponible
+        if number in street_coincidence["NUMERO"].values:
         
-        if not number_coincidence.empty:
-            return (number_coincidence["LATITUD"].iloc[0], number_coincidence["LONGITUD"].iloc[0])
+            # Si el número exacto coincide, devolverlo
+            match = street_coincidence[street_coincidence["NUMERO"] == number]
+            return matched_street+", "+str(number), (match["LATITUD"].iloc[0], match["LONGITUD"].iloc[0])
         else:
-            raise AdressNotFoundError(f"No se encontró el número {number} en {matched_street}.")
-        
+            # Si no coincide exactamente, buscar el número más cercano
+            street_coincidence["distance"] = abs(street_coincidence["NUMERO"] - number)
+            closest_match = street_coincidence.loc[street_coincidence["distance"].idxmin()]
+            return matched_street+", "+str(closest_match["NUMERO"]), (closest_match["LATITUD"], closest_match["LONGITUD"])
+    
     else:
         raise AdressNotFoundError("No se encontró una dirección similar en el callejero.")
 
@@ -282,6 +300,6 @@ def explora_grafo(graph:nx.DiGraph)->None:
         print("Todas las aristas tienen información de longitud.")
 
     pos = {nodo: (datos["x"], datos["y"]) for nodo, datos in graph.nodes(data=True)}
-    plt.figure(figsize=(10, 10))
-    nx.draw(graph, pos, node_size=10, edge_color="gray", with_labels=False)
-    plt.show()
+    # plt.figure(figsize=(10, 10))
+    # nx.draw(graph, pos, node_size=10, edge_color="gray", with_labels=False)
+    # plt.show()

@@ -28,59 +28,83 @@ def step_with_header(step_message, function_to_call=None, *args, **kwargs):
     if function_to_call:
         result = function_to_call(*args, **kwargs)  # Llama a la función con los argumentos proporcionados
         return result
-def seleccion_interactiva(callejero: pd.DataFrame) -> Tuple[str, Tuple[float, float]]:
-    """
-    Permite al usuario introducir la dirección de forma interactiva con sugerencias en tiempo real.
-    
-    Args:
-        callejero (DataFrame): DataFrame con las direcciones.
-        threshold (float): Umbral de similitud para las coincidencias aproximadas.
-        
-    Returns:
-        Tuple[str, Tuple[float, float]]: La dirección seleccionada y sus coordenadas (lat, lon).
-    """
-    while True:
+
+def check_input(ubi_input:str):
+    while "," not in ubi_input: 
+        print("El formato debe de ser: 'Calle,número")
+        while "," in ubi_input and (not ubi_input.split(",")[1].isnumeric()):
+            print("El número a introducir debe de ser un número")
+        ubi_input = input("Introduce la ubicación de nuevo: ")
+
+    return ubi_input
+def seleccion_interactiva(streetmap:pd.DataFrame):
+    path_file = "results/latest_results.txt"
+    directory = os.path.dirname(path_file) 
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    if not os.path.isfile(path_file):
+        with open(path_file, "w") as file:
+            pass 
+    print("Ubicaciones buscadas recientemente...")
+    with open(path_file, "r") as p:
+        for line in p.readlines()[::-1]:
+            print(line.rstrip())
+    ubications = ["inicio", "final"]
+    coords = []
+    for ubication in ubications:
+        ubi_input = input(f"Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): ")
+        ubi_input = ubi_input.strip()
+
+        ubi_input=check_input(ubi_input)
+
+        print("Ubicación introducida en el formato correcto")
+        print("Buscando coincidencias con la ubicación en la base de datos...")
         try:
-            print("\nIntroduce el nombre de la calle seguido del número (ejemplo: 'Calle Mayor, 10'):")
-            direction_input = input("Dirección: ").strip()
-            print("Búsquedas recientes: ")
-            file_path = "searchs/recent_searchs.txt"
+            choice=str()
+            while choice != "S":
+                street_well_wroten,coord = c.fuzzy_search(ubi_input,streetmap)
+                print(f"Se encontró una calle similar a la introducida: {street_well_wroten.capitalize()}")
+                choice = input("Escribe S si es la indicada y cualquier otra cosa sino: ")
+                ubi_input=check_input(ubi_input)
 
-            if not os.path.exists(file_path):
-                os.makedirs(os.path.dirname(file_path), exist_ok=True)
-                with open(file_path, "r") as s:
-                    print("Contenido del archivo:")
-                    for line in s.readlines()[::-1]:
-                        print(line.rstrip())
-            
-            coords = c.fuzzy_search(direction_input, callejero)
-            
-            print(f"\nSe encontró una coincidencia cercana para: '{direction_input}'")
-            print(f"Coordenadas: {coords}")
-            confirmacion = input("¿Es correcta esta dirección? (S/N): ").strip().lower()
-            if confirmacion == "s":
-                with open(file_path,"a") as s:
-                    s.write(direction_input +"\n")
+            with open(path_file, "r+") as p:
+                lines = p.readlines()
+                if (ubi_input + "\n") not in lines:
+                    p.write(ubi_input+"\n")
+            coords.append(coord)
 
-                return direction_input, coords
-        except c.AdressNotFoundError as e:
-            print(f"Error: {e}")
-            print("Por favor, intenta de nuevo con un nombre más completo o correcto.")
+        except Exception as e:
+            print(e)
+
+    return coords
 
 
+def elige_modo():
+    print("Tendrás tres modos de ruta a escoger:")
+    print("Ruta más corta, Ruta más rápida, ruta más rápida optimizando señales")
+    choice = input("Para la más corta -> C \nPara la más rápida -> R\nPara la más rápida optimizada con señales -> RS\n").upper()
+    while choice not in ["C","R","RF"]:
+        print("Introduce una opción correcta")
+        choice = input("Para la más corta -> C \nPara la más rápida -> R\nPara la más rápida optimizada con señales -> RS\n").upper()
+    return choice
+def calculo_rutas(choice:str,coords:list,streetmap:pd.DataFrame):
+    if choice == "C":
+        i_coord = coords[0]
+        distance = 2      #algoritmo sergio con pesos -> 
 def main():
     opt_title = input("Desea ver el título continuamente? Escribe S para ver el título continuamente")
     if opt_title.upper() == "S":
         print(GPS)
         streetmap = step_with_header("Cargando callejero...", c.carga_callejero)
-        time.sleep(2)
-        direction = step_with_header("Buscando dirección: Calle de Alberto Aguilera, 1...", seleccion_interactiva, streetmap)
-        time.sleep(4)
-        graph = step_with_header("Cargando grafo...", c.carga_grafo)
-        time.sleep(2)
-        directed_graph = step_with_header("Procesando grafo...", c.procesa_grafo, graph)
-        time.sleep(2)
-        step_with_header("Explorando grafo...", c.explora_grafo, directed_graph)
+        # graph = step_with_header("Cargando grafo...", c.carga_grafo)
+        # time.sleep(2)
+        # directed_graph = step_with_header("Procesando grafo...", c.procesa_grafo, graph)
+        # time.sleep(2)
+        # step_with_header("Explorando grafo...", c.explora_grafo, directed_graph)
+        # time.sleep(8)
+        direction = step_with_header("Buscando dirección...", seleccion_interactiva, streetmap)
         time.sleep(2)
         step_with_header("¡Proceso completado con éxito!")
     else:
@@ -96,3 +120,4 @@ def main():
 if __name__=="__main__":
     main()
     
+"Calle de Alberto Aguilera,25"
