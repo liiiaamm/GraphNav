@@ -23,7 +23,7 @@ import random
 
 from typing import Union
 MIN_PESO_ARISTA=1
-MAX_PESO_ARISTA=12
+MAX_PESO_ARISTA=18
 
 
 
@@ -82,7 +82,6 @@ if(not dirigido):
 
     # aam2=grafo_pesado.prim(G,peso_constante)
     # print(aam2)
-
 
     aam_rng=grafo_pesado.kruskal(G,peso_aleatorio)
     print(aam_rng)

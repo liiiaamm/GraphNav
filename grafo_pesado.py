@@ -204,9 +204,11 @@ def kruskal(G:nx.Graph, peso:Callable[[nx.Graph,object,object],float])-> List[Tu
         if componentes[u] != componentes[v]:
             aam.append((u, v))
             
-            # Unificar componentes
+            # Unificar componentes 
             nueva_componente = componentes[u].union(componentes[v])
             for nodo in nueva_componente:
                 componentes[nodo] = nueva_componente
+            print(nueva_componente)
+            print(componentes.)
     
     return aam
