@@ -104,7 +104,7 @@ def camino_minimo(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,o
     Raises:
         TypeError: Si origen o destino no son "hashable".
     """
-    min_rout = [destino]
+    min_rut = [destino]
 
     try:
         acm=dijkstra(G,peso,origen)
@@ -114,12 +114,12 @@ def camino_minimo(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,o
     if destino not in acm or acm[destino] is None:
         raise TypeError("El destino introducido no está en el grafo")
     
-    while min_rout[-1] != origen:
-        parent = acm[min_rout[-1]]
-        min_rout.append(parent)
+    while min_rut[-1] != origen:
+        parent = acm[min_rut[-1]]
+        min_rut.append(parent)
         
-    min_rout.reverse()
-    return min_rout
+    min_rut.reverse()
+    return min_rut
 
 
 
@@ -171,8 +171,7 @@ def prim(G: nx.Graph, peso: Callable[[nx.Graph, object, object], float]) -> Dict
     return padre
 
 
-
-                
+     
 
 def kruskal(G:nx.Graph, peso:Callable[[nx.Graph,object,object],float])-> List[Tuple[object,object]]:
     """ Calcula un Árbol Abarcador Mínimo para el grafo
@@ -190,4 +189,24 @@ def kruskal(G:nx.Graph, peso:Callable[[nx.Graph,object,object],float])-> List[Tu
         En el ejemplo anterior en que prim(G,peso)={1:None, 2:1, 3:2, 4:1} podríamos tener, por ejemplo,
         kruskal(G,peso)=[(1,2),(1,4),(3,2)]
     """
-    pass
+    if not isinstance(G, nx.Graph):
+        raise ValueError("El grafo debe ser no dirigido (nx.Graph).")
+    
+    # Lista de aristas ordenada por peso
+    aristas = sorted(G.edges(data=True), key=lambda e: peso(G, e[0], e[1]))
+    
+    # Inicialización de componentes
+    componentes = {nodo: {nodo} for nodo in G.nodes}
+    aam = []  # Lista de aristas del Árbol Abarcador Mínimo
+    
+    for u, v, _ in aristas:
+        # Si los nodos no pertenecen a la misma componente
+        if componentes[u] != componentes[v]:
+            aam.append((u, v))
+            
+            # Unificar componentes
+            nueva_componente = componentes[u].union(componentes[v])
+            for nodo in nueva_componente:
+                componentes[nodo] = nueva_componente
+    
+    return aam
