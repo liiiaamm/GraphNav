@@ -7,6 +7,10 @@ from typing import Tuple
 import os
 import time
 from math import sqrt
+import grafo_pesado as g
+import numpy as np
+
+
 GPS = """
    _____  _____    _____    _____ __     __
   / ____||  __ \  / ____|  |  __ \\ \   / /
@@ -18,6 +22,9 @@ GPS = """
                                            
 
 """
+
+from typing import Union
+
 def step_with_header(step_message, function_to_call=None, *args, **kwargs):
     """
     Muestra el encabezado "GPS" y un mensaje, luego ejecuta una función si es necesario.
@@ -58,6 +65,7 @@ def seleccion_interactiva(streetmap:pd.DataFrame):
         ubi_input = ubi_input.strip()
 
         ubi_input=check_input(ubi_input)
+        ubi_input = ubi_input.upper()
 
         print("Ubicación introducida en el formato correcto")
         print("Buscando coincidencias con la ubicación en la base de datos...")
@@ -68,6 +76,7 @@ def seleccion_interactiva(streetmap:pd.DataFrame):
                 print(f"Se encontró una calle similar a la introducida: {street_well_wroten.capitalize()}")
                 choice = input("Escribe S si es la indicada y cualquier otra cosa sino: ")
                 ubi_input=check_input(ubi_input)
+                ubi_input = ubi_input.upper()
 
             with open(path_file, "r+") as p:
                 lines = p.readlines()
@@ -78,7 +87,7 @@ def seleccion_interactiva(streetmap:pd.DataFrame):
         except Exception as e:
             print(e)
 
-    return coords
+    return coords,ubi_input
 
 
 def elige_modo():
@@ -91,7 +100,7 @@ def elige_modo():
     return choice
 
 
-def encontrar_nodo_acc_mas_cercano(coord,nodes,edges,exit_direction=True):
+def encontrar_nodo_acc_mas_cercano(coords,G):
     """
     Encuentra el nodo más cercano a unas coordenadas específicas que sea accesible según la dirección de las aristas.
 
@@ -104,13 +113,43 @@ def encontrar_nodo_acc_mas_cercano(coord,nodes,edges,exit_direction=True):
     Returns:
         object: El nodo más cercano accesible.
     """
-    x,y = coord
-    closest_node = None
+    closest_nodes = []
+    for coord in coords:
+        x,y = coord
+        print(x,y)
+        nodes = G.nodes(data=True)
+        closest_node_id = min(G.nodes,  key=lambda nodo: sqrt((x - G.nodes[nodo]['y'])**2 + (y - G.nodes[nodo]['x'])**2))
+        closest_nodes.append(closest_node_id)
 
-def calculo_rutas(choice:str,coords:list,streetmap:pd.DataFrame):
+
+    return closest_nodes
+
+
+def aplicar_peso_corto(G:Union[nx.Graph, nx.DiGraph], origen:object, destino:object):
+    if "length" not in G[origen][destino]:
+        pass
+    return G[origen][destino]["length"]
+
+def aplicar_peso_rapido(G:Union[nx.Graph, nx.DiGraph], origen:object, destino:object):
+    pass
+
+        
+
+def calculo_rutas(coords:list,graph:nx.Graph):
+    choice = elige_modo()
+    nodes = encontrar_nodo_acc_mas_cercano(coords,graph)
+    print(nodes)
     if choice == "C":
-        i_coord = coords[0]
-        distance = 2      #algoritmo sergio con pesos -> 
+        print(nodes[0])
+        print(nodes[1])
+        weight = aplicar_peso_corto(graph,nodes[0],nodes[1])
+        print(weight)
+        path = g.camino_minimo(graph,weight,nodes[0],nodes[1])
+        print(path)
+        
+        
+
+
 
 
 def main():
@@ -123,9 +162,12 @@ def main():
         directed_graph = step_with_header("Procesando grafo...", c.procesa_grafo, graph)
         time.sleep(2)
         step_with_header("Explorando grafo...", c.explora_grafo, directed_graph)
-        time.sleep(20)
-        direction = step_with_header("Buscando dirección...", seleccion_interactiva, streetmap)
         time.sleep(2)
+        coords,direction = step_with_header("Buscando dirección...", seleccion_interactiva, streetmap)
+        print(coords)
+        time.sleep(5)
+        step_with_header("Calculando rutas",calculo_rutas,coords,directed_graph)
+        time.sleep(2000000)
         step_with_header("¡Proceso completado con éxito!")
     else:
         print(GPS)

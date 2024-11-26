@@ -189,12 +189,12 @@ def fuzzy_search(direccion:str, callejero:pd.DataFrame, threshold=80) ->Tuple[fl
         
             # Si el número exacto coincide, devolverlo
             match = street_coincidence[street_coincidence["NUMERO"] == number]
-            return matched_street+", "+str(number), (match["LATITUD"].iloc[0], match["LONGITUD"].iloc[0])
+            return matched_street+", "+str(number), (match["LONGITUD"].iloc[0], match["LATITUD"].iloc[0])
         else:
             # Si no coincide exactamente, buscar el número más cercano
             street_coincidence["distance"] = abs(street_coincidence["NUMERO"] - number)
             closest_match = street_coincidence.loc[street_coincidence["distance"].idxmin()]
-            return matched_street+", "+str(closest_match["NUMERO"]), (closest_match["LATITUD"], closest_match["LONGITUD"])
+            return matched_street+", "+str(closest_match["NUMERO"]), (closest_match["LONGITUD"], closest_match["LATITTUD"])
     
     else:
         raise AdressNotFoundError("No se encontró una dirección similar en el callejero.")
