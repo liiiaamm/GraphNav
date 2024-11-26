@@ -16,8 +16,7 @@ Librería para el análisis de grafos pesados.
 from typing import List,Tuple,Dict,Callable,Union
 import networkx as nx
 import sys
-
-import heapq #Librería para la creación de colas de prioridad
+from heapq import heappush, heappop
 
 INFTY=sys.float_info.max #Distincia "infinita" entre nodos de un grafo
 
@@ -54,34 +53,38 @@ def dijkstra(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,object
         Si G.dijksra(1)={2:1, 3:2, 4:1} entonces 1 es padre de 2 y de 4 y 2 es padre de 3.
         En particular, un camino mínimo desde 1 hasta 3 sería 1->2->3.
     """
-    
+    # Verificar que el origen sea "hashable"
     try:
         hash(origen)
     except TypeError:
         raise TypeError("El origen no es hashable. Usa un tipo inmutable como int, str, tuple, etc.")
-
+    
+    # Inicialización
     padre = {v: None for v in G.nodes}
     d = {v: float('inf') for v in G.nodes}
-    visitado = {v: False for v in G.nodes}
-
     d[origen] = 0
-    Q = list(G.nodes)  #Inicializamos la cola como una lista de nodos
 
-    while Q:
-        #Encontrar el nodo con la menor distancia en Q
-        v = min(Q, key=lambda node: d[node])
+    # Cola de prioridad para mantener las distancias
+    # Añadimos un índice único para garantizar que los nodos no se comparen directamente.
+    cola_prioridad = [(0, id(origen), origen)]  # (distancia_acumulada, id_unico, nodo_actual)
 
-        Q.remove(v)  #Eliminarlo de la cola
-        visitado[v] = True
+    while cola_prioridad:
+        distancia_actual, _, nodo_actual = heappop(cola_prioridad)
 
-        for vecino in G.neighbors(v):
-            if not visitado[vecino]:
-                w = peso(G, v, vecino)
+        # Si la distancia es mayor que la registrada, ignorar (nodo ya procesado)
+        if distancia_actual > d[nodo_actual]:
+            continue
 
-                #Relajación de la arista
-                if d[vecino] > d[v] + w:
-                    d[vecino] = d[v] + w
-                    padre[vecino] = v
+        # Relajar todas las aristas desde el nodo actual
+        for vecino in G.neighbors(nodo_actual):
+            w = peso(G, nodo_actual, vecino)
+            nueva_distancia = distancia_actual + w
+
+            if nueva_distancia < d[vecino]:  # Si se encuentra un camino más corto
+                d[vecino] = nueva_distancia
+                padre[vecino] = nodo_actual
+                # Añadimos un identificador único al heap
+                heappush(cola_prioridad, (nueva_distancia, id(vecino), vecino))  # Añadir a la cola
 
     return padre
 
@@ -138,76 +141,97 @@ def prim(G: nx.Graph, peso: Callable[[nx.Graph, object, object], float]) -> Dict
         Dict[object, object]: Diccionario que indica el padre de cada nodo en el Árbol Abarcador Mínimo.
                               Los nodos raíces tendrán `None` como padre.
     """
-    # Diccionarios de padre y coste mínimo para cada nodo
-    padre = {v: None for v in G.nodes}  
-    coste_minimo = {v: float('inf') for v in G.nodes}
-    
-    # Iniciamos el algoritmo desde un vértice arbitrario (usamos el primer nodo)
-    raiz = list(G.nodes)[0]
-    coste_minimo[raiz] = 0  # El costo del nodo raíz es 0
-    
-    # Lista de nodos visitados
+    padre = {v: None for v in G.nodes}
     visitado = set()
-    
-    while len(visitado) < len(G.nodes):
-        # Seleccionamos el nodo con el coste mínimo
-        v = None
-        for nodo in G.nodes:
-            if nodo not in visitado:
-                if v is None or coste_minimo[nodo] < coste_minimo[v]:
-                    v = nodo
-        
-        # Marcar el nodo como visitado
-        visitado.add(v)
-        
-        # Explorar los vecinos del nodo seleccionado
-        for vecino in G.neighbors(v):
+    heap = []
+    contador = 0  
+
+    nodo_inicial = list(G.nodes)[0]
+    heappush(heap, (0, contador, nodo_inicial))  
+    contador += 1
+
+    while heap:
+        peso_actual, _, nodo_actual = heappop(heap)
+
+        if nodo_actual in visitado:
+            continue
+
+        visitado.add(nodo_actual)
+
+        for vecino in G.neighbors(nodo_actual):
             if vecino not in visitado:
-                w = peso(G, v, vecino)
-                # Si encontramos un camino más barato hacia el vecino, actualizamos
-                if w < coste_minimo[vecino]:
-                    coste_minimo[vecino] = w
-                    padre[vecino] = v
-    
+                w = peso(G, nodo_actual, vecino)
+                heappush(heap, (w, contador, vecino))
+                contador += 1
+                if padre[vecino] is None or w < peso(G, padre[vecino], vecino):
+                    padre[vecino] = nodo_actual
+
     return padre
 
-
-     
-
-def kruskal(G:nx.Graph, peso:Callable[[nx.Graph,object,object],float])-> List[Tuple[object,object]]:
-    """ Calcula un Árbol Abarcador Mínimo para el grafo
-    usando el algoritmo de Kruskal.
-    
-    Args:
-        G (nx.Graph): grafo
-        peso (función): función que recibe un grafo y dos vértices del grafo y devuelve el peso de la arista que los conecta
-    Returns:
-        List[Tuple[object,object]]: Devuelve una lista [(s1,t1),(s2,t2),...,(sn,tn)]
-            de los pares de vértices del grafo que forman las aristas
-            del arbol abarcador mínimo.
-    Raises: None
-    Example:
-        En el ejemplo anterior en que prim(G,peso)={1:None, 2:1, 3:2, 4:1} podríamos tener, por ejemplo,
-        kruskal(G,peso)=[(1,2),(1,4),(3,2)]
+class UnionFind:
     """
-    if not isinstance(G, nx.Graph):
-        raise ValueError("El grafo debe ser no dirigido (nx.Graph).")
-    
-    # Lista de aristas ordenada por peso
-    aristas = sorted(G.edges(data=True), key=lambda e: peso(G, e[0], e[1]))
-    
-    # Inicialización de componentes
-    componentes = {nodo: {nodo} for nodo in G.nodes}
-    aam = []  # Lista de aristas del Árbol Abarcador Mínimo
-    
-    for u, v, _ in aristas:
-        # Si los nodos no pertenecen a la misma componente
-        if componentes[u] != componentes[v]:
-            aam.append((u, v))
-            
-            # Unificar componentes
-            nueva_componente = componentes[u].union(componentes[v])
-            for nodo in nueva_componente:
-                componentes[nodo] = nueva_componente
-    
-    return aam
+    Implementación de una estructura de unión y búsqueda (Union-Find/Disjoint Set Union).
+    """
+    def __init__(self, elementos):
+        self.padre = {x: x for x in elementos}  # Inicialmente, cada nodo es su propio padre
+        self.rango = {x: 0 for x in elementos}  # Inicialmente, todos tienen rango 0
+
+    def find(self, x):
+        """
+        Encuentra el representante del conjunto al que pertenece x.
+        Aplica compresión de caminos para optimización.
+        """
+        if self.padre[x] != x:
+            self.padre[x] = self.find(self.padre[x])  # Compresión de caminos
+        return self.padre[x]
+
+    def union(self, x, y):
+        """
+        Une los conjuntos de x e y. Usa unión por rango para optimización.
+        """
+        raiz_x = self.find(x)
+        raiz_y = self.find(y)
+
+        if raiz_x != raiz_y:
+            if self.rango[raiz_x] > self.rango[raiz_y]:
+                self.padre[raiz_y] = raiz_x
+            elif self.rango[raiz_x] < self.rango[raiz_y]:
+                self.padre[raiz_x] = raiz_y
+            else:
+                self.padre[raiz_y] = raiz_x
+                self.rango[raiz_x] += 1
+
+
+# Algoritmo de Kruskal
+def kruskal(G: nx.Graph, peso: Callable[[nx.Graph, object, object], float]) -> List[Tuple[object, object]]:
+    """
+    Calcula un Árbol Abarcador Mínimo para el grafo usando el algoritmo de Kruskal.
+
+    Args:
+        G (nx.Graph): Grafo no dirigido.
+        peso (Callable): Función que recibe un grafo y dos vértices del grafo 
+                         y devuelve el peso de la arista que los conecta.
+
+    Returns:
+        List[Tuple[object, object]]: Lista de aristas que forman el Árbol Abarcador Mínimo.
+    """
+    # Lista para almacenar las aristas del MST
+    mst = []
+
+    # Ordenar las aristas por peso usando la función proporcionada
+    aristas_ordenadas = sorted(G.edges, key=lambda edge: peso(G, edge[0], edge[1]))
+
+    # Inicializar Union-Find para manejar los conjuntos
+    uf = UnionFind(G.nodes)
+
+    # Procesar las aristas
+    for u, v in aristas_ordenadas:
+        if uf.find(u) != uf.find(v):  # Si los nodos no están en el mismo conjunto
+            uf.union(u, v)  # Unir los conjuntos
+            mst.append((u, v))  # Añadir la arista al MST
+
+            # Parada anticipada: Si el MST tiene |V| - 1 aristas, está completo
+            if len(mst) == len(G.nodes) - 1:
+                break
+
+    return mst

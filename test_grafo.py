@@ -23,7 +23,7 @@ import random
 
 from typing import Union
 MIN_PESO_ARISTA=1
-MAX_PESO_ARISTA=12
+MAX_PESO_ARISTA=18
 
 
 
@@ -40,7 +40,7 @@ def peso_aleatorio(G:Union[nx.Graph, nx.DiGraph], origen:object, destino:object)
 
 
 #Listas de vértices y aristas del grafo
-dirigido=False
+dirigido=True
 vertices=[1,2,3,'a',5,6]
 aristas=[(1,2),(1,3),(1,'a'),(1,5),(2,'a'),(3,'a'),(3,5),(5,6)]
 
@@ -66,23 +66,22 @@ for a in aristas:
 # camino=grafo_pesado.camino_minimo(G,peso_constante,1,6)
 # print(camino)
 
-# # # Dijkstra y camino mínimo con peso aleatorio
+# # Dijkstra y camino mínimo con peso aleatorio
 # acm_rng=grafo_pesado.dijkstra(G,peso_aleatorio,1)
 # print(acm_rng)
 
-# camino_rng=grafo_pesado.camino_minimo(G,peso_aleatorio,1,6)
-# print(camino_rng)
+camino_rng=grafo_pesado.camino_minimo(G,peso_aleatorio,1,6)
+print(camino_rng)
 
 
 
 if(not dirigido):
-    #Árbol abarcador mínimo
-    # aam=grafo_pesado.kruskal(G,peso_constante)
-    # print(aam)
+    # Árbol abarcador mínimo
+    aam=grafo_pesado.kruskal(G,peso_constante)
+    print(aam)
 
-    # aam2=grafo_pesado.prim(G,peso_constante)
-    # print(aam2)
-
+    aam2=grafo_pesado.prim(G,peso_constante)
+    print(aam2)
 
     aam_rng=grafo_pesado.kruskal(G,peso_aleatorio)
     print(aam_rng)
