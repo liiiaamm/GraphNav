@@ -53,7 +53,7 @@ def dijkstra(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,object
         Si G.dijksra(1)={2:1, 3:2, 4:1} entonces 1 es padre de 2 y de 4 y 2 es padre de 3.
         En particular, un camino mínimo desde 1 hasta 3 sería 1->2->3.
     """
-    # Verificar que el origen sea "hashable"
+    #Se verifica que el origen sea "hashable"
     try:
         hash(origen)
     except TypeError:
@@ -64,30 +64,27 @@ def dijkstra(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,object
     d = {v: float('inf') for v in G.nodes}
     d[origen] = 0
 
-    # Cola de prioridad para mantener las distancias
-    # Añadimos un índice único para garantizar que los nodos no se comparen directamente.
+    #Se pone la cola de prioridad
+    #Se añade un solo índice para asegurarse de que los nodos no se comparen directamente (puesto que hay str e int).
     cola_prioridad = [(0, id(origen), origen)]  # (distancia_acumulada, id_unico, nodo_actual)
 
     while cola_prioridad:
         distancia_actual, _, nodo_actual = heappop(cola_prioridad)
-
-        # Si la distancia es mayor que la registrada, ignorar (nodo ya procesado)
+        #Si la distancia es mayor que la registrada significa que el nodo ya se ha analizado
         if distancia_actual > d[nodo_actual]:
             continue
-
-        # Relajar todas las aristas desde el nodo actual
         for vecino in G.neighbors(nodo_actual):
+            #Se calcula el peso de los nodos vecinos
             w = peso(G, nodo_actual, vecino)
             nueva_distancia = distancia_actual + w
-
-            if nueva_distancia < d[vecino]:  # Si se encuentra un camino más corto
+            #Esto por si se encuentra un camino más corto
+            if nueva_distancia < d[vecino]:  
                 d[vecino] = nueva_distancia
                 padre[vecino] = nodo_actual
-                # Añadimos un identificador único al heap
-                heappush(cola_prioridad, (nueva_distancia, id(vecino), vecino))  # Añadir a la cola
+                #Se le añade un id único al heap y se introduce en la cola
+                heappush(cola_prioridad, (nueva_distancia, id(vecino), vecino)) 
 
     return padre
-
 
 
 def camino_minimo(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,object,object],float], Callable[[nx.DiGraph,object,object],float]] ,origen:object,destino:object)->List[object]:
@@ -109,21 +106,20 @@ def camino_minimo(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,o
         TypeError: Si origen o destino no son "hashable".
     """
     min_rut = [destino]
-
+    #Se ejecuta dijkstra
     try:
         acm=dijkstra(G,peso,origen)
     except:
         raise TypeError("El origen o el destino no es hashable")
-    
+    #Se comprueba si el nodo final existe
     if destino not in acm or acm[destino] is None:
         raise TypeError("El destino introducido no está en el grafo")
-    
+    #Se itera sobre la lista al revés hasta llegar al nodo inicial
     while min_rut[-1] != origen:
         parent = acm[min_rut[-1]]
         min_rut.append(parent)
-        
-    min_rut.reverse()
-    return min_rut
+    #Se le da la vuelta a la lista para ponerla en orden y se devuelve    
+    return min_rut.reverse()
 
 
 
@@ -173,8 +169,8 @@ class UnionFind:
     Implementación de una estructura de unión y búsqueda (Union-Find/Disjoint Set Union).
     """
     def __init__(self, elementos):
-        self.padre = {x: x for x in elementos}  # Inicialmente, cada nodo es su propio padre
-        self.rango = {x: 0 for x in elementos}  # Inicialmente, todos tienen rango 0
+        self.padre = {x: x for x in elementos}
+        self.rango = {x: 0 for x in elementos}
 
     def find(self, x):
         """
@@ -182,7 +178,7 @@ class UnionFind:
         Aplica compresión de caminos para optimización.
         """
         if self.padre[x] != x:
-            self.padre[x] = self.find(self.padre[x])  # Compresión de caminos
+            self.padre[x] = self.find(self.padre[x])
         return self.padre[x]
 
     def union(self, x, y):
