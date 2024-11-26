@@ -66,7 +66,7 @@ for a in aristas:
 # camino=grafo_pesado.camino_minimo(G,peso_constante,1,6)
 # print(camino)
 
-# # Dijkstra y camino mínimo con peso aleatorio
+# # # Dijkstra y camino mínimo con peso aleatorio
 # acm_rng=grafo_pesado.dijkstra(G,peso_aleatorio,1)
 # print(acm_rng)
 
@@ -80,12 +80,12 @@ if(not dirigido):
     # aam=grafo_pesado.kruskal(G,peso_constante)
     # print(aam)
 
-    aam2=grafo_pesado.prim(G,peso_constante)
-    print(aam2)
+    # aam2=grafo_pesado.prim(G,peso_constante)
+    # print(aam2)
 
 
-    # aam_rng=grafo_pesado.kruskal(G,peso_aleatorio)
-    # print(aam_rng)
+    aam_rng=grafo_pesado.kruskal(G,peso_aleatorio)
+    print(aam_rng)
 
     aam2_rng=grafo_pesado.prim(G,peso_aleatorio)
     print(aam2_rng)
