@@ -70,7 +70,7 @@ def conversion_to_number(pattern,x):
             print("Los valores no son enteros, no se puede hacer la conversión")
             return None
         direction = match.group(4)
-        conversion = degrees*(minutes/60)*(seconds/3600)
+        conversion = degrees+(minutes/60)+(seconds/3600)
         if direction in ["S","W"]:
             return -1*conversion
         return conversion
@@ -103,7 +103,6 @@ def carga_callejero() -> pd.DataFrame:
     copy["LATITUD"] = copy["LATITUD"].apply(lambda x: conversion_to_number(pattern,x))
     copy["LONGITUD"] = copy['LONGITUD'].apply(lambda x: conversion_to_number(pattern,x))
     return copy 
-       
 
 
 

@@ -6,7 +6,7 @@ import re
 from typing import Tuple
 import os
 import time
-
+from math import sqrt
 GPS = """
    _____  _____    _____    _____ __     __
   / ____||  __ \  / ____|  |  __ \\ \   / /
@@ -89,21 +89,41 @@ def elige_modo():
         print("Introduce una opción correcta")
         choice = input("Para la más corta -> C \nPara la más rápida -> R\nPara la más rápida optimizada con señales -> RS\n").upper()
     return choice
+
+
+def encontrar_nodo_acc_mas_cercano(coord,nodes,edges,exit_direction=True):
+    """
+    Encuentra el nodo más cercano a unas coordenadas específicas que sea accesible según la dirección de las aristas.
+
+    Args:
+        coords (tuple): Coordenadas (latitud, longitud) de la ubicación objetivo.
+        nodes (dict): Diccionario de nodos, donde cada nodo tiene sus coordenadas como atributos.
+        edges (dict): Diccionario de aristas, donde cada arista tiene información sobre dirección y accesibilidad.
+        exit_direction (bool): Si es True, busca nodos donde el acceso sea de salida desde las coordenadas. Si es False, entrada.
+
+    Returns:
+        object: El nodo más cercano accesible.
+    """
+    x,y = coord
+    closest_node = None
+
 def calculo_rutas(choice:str,coords:list,streetmap:pd.DataFrame):
     if choice == "C":
         i_coord = coords[0]
         distance = 2      #algoritmo sergio con pesos -> 
+
+
 def main():
     opt_title = input("Desea ver el título continuamente? Escribe S para ver el título continuamente")
     if opt_title.upper() == "S":
         print(GPS)
         streetmap = step_with_header("Cargando callejero...", c.carga_callejero)
-        # graph = step_with_header("Cargando grafo...", c.carga_grafo)
-        # time.sleep(2)
-        # directed_graph = step_with_header("Procesando grafo...", c.procesa_grafo, graph)
-        # time.sleep(2)
-        # step_with_header("Explorando grafo...", c.explora_grafo, directed_graph)
-        # time.sleep(8)
+        graph = step_with_header("Cargando grafo...", c.carga_grafo)
+        time.sleep(2)
+        directed_graph = step_with_header("Procesando grafo...", c.procesa_grafo, graph)
+        time.sleep(2)
+        step_with_header("Explorando grafo...", c.explora_grafo, directed_graph)
+        time.sleep(20)
         direction = step_with_header("Buscando dirección...", seleccion_interactiva, streetmap)
         time.sleep(2)
         step_with_header("¡Proceso completado con éxito!")
