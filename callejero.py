@@ -23,6 +23,7 @@ from typing import Tuple
 import matplotlib.pyplot as plt
 from rapidfuzz import process
 import os
+from typing import Union, Callable, Any, Optional, Tuple, List
 
 
 STREET_FILE_NAME="direcciones.csv"
