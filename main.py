@@ -88,7 +88,7 @@ def seleccion_interactiva(streetmap:pd.DataFrame):
                     lines = lines[1:]  # Elimina la primera línea (la más antigua)
                 # Verificar si la entrada ya existe
                 if ubi_input not in lines:
-                    lines.append(ubi_input"+\n")  # Añadir solo si no existe
+                    lines.append(ubi_input+"\n")  # Añadir solo si no existe
                 # Reescribir el archivo con las nuevas líneas
                 p.seek(0)  # Volver al principio del archivo
                 p.writelines(lines)  # Escribir las líneas actualizadas

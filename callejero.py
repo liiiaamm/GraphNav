@@ -119,7 +119,7 @@ def dibuja_grafo(graph: nx.MultiDiGraph, path: list):
     """
     # Asegurarse de que los nodos del path están en el grafo
     valid_path = [node for node in path if node in graph.nodes]
-    
+
     # Obtener los colores para las aristas
     edge_colors = []
     edge_widths = []
@@ -145,8 +145,8 @@ def dibuja_grafo(graph: nx.MultiDiGraph, path: list):
             node_colors.append("red")    # Nodo final en rojo
             node_sizes.append(100)       # Tamaño más grande
         else:
-            node_colors.append("gray")   # Otros nodos en gris
-            node_sizes.append(30)        # Tamaño por defecto
+            node_colors.append("gray")   # Otros nodos en gris o no mostrarlos
+            node_sizes.append(0)         # Tamaño cero para no mostrarlos
 
     # Dibujar el grafo sin mostrarlo aún
     fig, ax = ox.plot_graph(
