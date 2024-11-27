@@ -239,6 +239,8 @@ def calculo_rutas(coords:list,graph:nx.Graph):
         path = g.camino_minimo(graph,aplicar_peso_rapido_sem,nodes[0],nodes[1])
         print(path)
 
+    instrucciones(path,graph)
+
 
 def calcular_grados(long1, lat1, long2, lat2):
     """
@@ -285,65 +287,79 @@ def determinar_giro(bearing1, bearing2):
     diferencia = (bearing2 - bearing1 + 360) % 360
 
     # Determinar la dirección del giro
-    if diferencia == 0:
-        return "Recto"  # No hay cambio de dirección
-    elif diferencia < 180:
+ # No hay cambio de dirección
+    if diferencia < 180:
         return "Derecha"  # Giro hacia la derecha
     else:
         return "Izquierda"  # Giro hacia la izquierda
-def instrucciones(path:list,graph:nx.Graph):
-    """_summary_
+def instrucciones(path: list, graph: nx.Graph, max_distance: float = 100):
+    """
+    Genera instrucciones basadas en un camino de nodos en un grafo.
 
     Args:
-        path (list): Lista de identificadores de nodos
+        path (list): Lista de identificadores de nodos que forman un camino.
+        graph (nx.Graph): Grafo que contiene nodos y aristas.
+        max_distance (float): Máxima distancia (en metros) a considerar antes de decidir instrucciones.
     """
-        
-    for i in range(len(path)-5):
-        study_nodes = [graph.nodes[path[j]] for j in range(i,i+5)] 
-            
-        streets = [graph.edges[path[j]][path[j+1]] for j in range(i,i+4)]
-        fail_index_one = [i for i, street in enumerate(streets) if not all("name" in street for street in streets) ]
-        # Caso 1: Verificar si falta el atributo "name" o es None
-        fail_index_one = [i for i, street in enumerate(streets) if "name" not in street or street["name"] is None]
-        for idx in fail_index_one:
-            if idx < len(streets) - 1:  # No es la última posición
-                if idx > 0 and streets[idx - 1].get("name") == streets[idx + 1].get("name"):
-                    streets[idx]["name"] = streets[idx - 1]["name"]  # Usar el nombre de la calle anterior
-                else:
-                    streets[idx]["name"] = streets[idx + 1].get("name", "Unknown Street")  # Usar el nombre posterior
-            else:  # Si es la última posición
-                streets[idx]["name"] = streets[idx - 1].get("name", "Unknown Street")  # Usar el nombre de la calle anterior
+    study_nodes = [graph.nodes[path[j]] for j in range(len(path))]
+    streets = [graph.edges[path[j], path[j+1]] for j in range(len(path) - 1)]
 
-        # Caso 2: Verificar si "name" existe pero no es una cadena
-        fail_index_two = [i for i, street in enumerate(streets) if not isinstance(street.get("name", None), str)]
-        for idx in fail_index_two:
-            if idx < len(streets) - 1:  # No es la última posición
-                if idx > 0 and streets[idx - 1].get("name") == streets[idx + 1].get("name"):
-                    streets[idx]["name"] = streets[idx - 1]["name"]  # Usar el nombre de la calle anterior
-                else:
-                    streets[idx]["name"] = streets[idx + 1].get("name", "Unknown Street")  # Usar el nombre posterior
-            else:  # Si es la última posición
-                streets[idx]["name"] = streets[idx - 1].get("name", "Unknown Street")  # Usar el nombre de la calle anterior
-
-            if  all(streets[0]["name"]==street["name"] for street in streets):
-
-                e_sum = 0
-                for j in  range(study_nodes):
-                    e_sum += aplicar_peso_corto(study_nodes[j],study_nodes[j+1])*1000
-                print(f"Sigue recto por la calle {streets[0]['name']} durante {e_sum} metros ")
-
+    # Comprobaciones iniciales para limpiar el grafo
+    fail_index_one = [j for j, street in enumerate(streets) if "name" not in street or street["name"] is None]
+    for idx in fail_index_one:
+        if idx < len(streets) - 1:
+            if idx > 0 and streets[idx - 1].get("name") == streets[idx + 1].get("name"):
+                streets[idx]["name"] = streets[idx - 1]["name"]
             else:
-                turn_index = len(study_nodes)
-                t_sum = 0
-                for j in  range(turn_index-1):
-                    t_sum += aplicar_peso_corto(study_nodes[j],study_nodes[j+1])*1000
-               
-                p_degrees = calcular_grados(study_nodes[-3]["x"],study_nodes[-3]["y"],study_nodes[-2]["x"],study_nodes[-2]["y"])
-                n_degrees = calcular_grados(study_nodes[-2]["x"],study_nodes[-2]["y"],study_nodes[-1]["x"],study_nodes[-1]["y"])
-                turn_to = determinar_giro(n_degrees,p_degrees)
+                streets[idx]["name"] = streets[idx + 1].get("name", "Unknown Street")
+        else:
+            streets[idx]["name"] = streets[idx - 1].get("name", "Unknown Street")
 
-                mv_street = study_nodes[-2][-1]["name"]
-                print(f"Gira a la {turn_to} por la calle: {mv_street} en {t_sum} metros")
+    fail_index_two = [j for j, street in enumerate(streets) if not isinstance(street.get("name", None), str)]
+    for idx in fail_index_two:
+        if idx < len(streets) - 1:
+            if idx > 0 and streets[idx - 1].get("name") == streets[idx + 1].get("name"):
+                streets[idx]["name"] = streets[idx - 1]["name"]
+            else:
+                streets[idx]["name"] = streets[idx + 1].get("name", "Unknown Street")
+        else:
+            streets[idx]["name"] = streets[idx - 1].get("name", "Unknown Street")
+
+    # Variable para rastrear la última instrucción generada
+    last_instruction = {"street": None, "distance": 0}
+
+    i = 0
+    while i < len(path) - 1:
+        current_street = streets[i]["name"]
+        e_sum = 0
+        j = i
+
+        # Acumular distancia mientras sea la misma calle
+        while j < len(path) - 1 and streets[j]["name"] == current_street:
+            e_sum += aplicar_peso_corto(graph, path[j], path[j+1])
+            j += 1
+
+        # Evitar imprimir instrucciones redundantes
+        if last_instruction["street"] != current_street or abs(last_instruction["distance"] - e_sum) > 1e-2:
+            print(f"Sigue recto por la calle {current_street} durante {e_sum:.2f} metros.")
+            last_instruction = {"street": current_street, "distance": e_sum}
+
+        i = j  # Avanzar al siguiente tramo de calle
+
+        # Manejar giros si hay un cambio de calle
+        if i < len(path) - 1:
+            t_sum = aplicar_peso_corto(graph, path[i-1], path[i])
+            p_degrees = calcular_grados(
+                graph.nodes[path[i-2]]["x"], graph.nodes[path[i-2]]["y"],
+                graph.nodes[path[i-1]]["x"], graph.nodes[path[i-1]]["y"]
+            )
+            n_degrees = calcular_grados(
+                graph.nodes[path[i-1]]["x"], graph.nodes[path[i-1]]["y"],
+                graph.nodes[path[i]]["x"], graph.nodes[path[i]]["y"]
+            )
+            turn_to = determinar_giro(n_degrees, p_degrees)
+            mv_street = streets[i]["name"]
+            print(f"Gira a la {turn_to} por la calle {mv_street} en {t_sum:.2f} metros.")
 
 
             
