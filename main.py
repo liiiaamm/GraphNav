@@ -212,7 +212,6 @@ def aplicar_peso_rapido_sem(G:Union[nx.Graph, nx.DiGraph], origen:object, destin
         float: El peso calculado, considerando tiempo esperado de viaje.
     """
     movement_time = aplicar_peso_rapido(G,origen,destino)
-    print(movement_time)
     signal_time = 0
     if "highway" in G[origen][destino] and "crossing" in G[origen][destino]["highway"]:
         stop_probability = 0.8  
@@ -237,9 +236,7 @@ def calculo_rutas(coords:list,graph:nx.Graph):
         print(path)
     else:
         path = g.camino_minimo(graph,aplicar_peso_rapido_sem,nodes[0],nodes[1])
-        print(path)
-
-    instrucciones(path,graph)
+    return path 
 
 
 def calcular_grados(long1, lat1, long2, lat2):
@@ -341,7 +338,7 @@ def instrucciones(path: list, graph: nx.Graph, max_distance: float = 100):
 
         # Evitar imprimir instrucciones redundantes
         if last_instruction["street"] != current_street or abs(last_instruction["distance"] - e_sum) > 1e-2:
-            print(f"Sigue recto por la calle {current_street} durante {e_sum:.2f} metros.")
+            print(f"Sigue recto por la calle {current_street} durante {int(e_sum)} metros.")
             last_instruction = {"street": current_street, "distance": e_sum}
 
         i = j  # Avanzar al siguiente tramo de calle
@@ -359,7 +356,7 @@ def instrucciones(path: list, graph: nx.Graph, max_distance: float = 100):
             )
             turn_to = determinar_giro(n_degrees, p_degrees)
             mv_street = streets[i]["name"]
-            print(f"Gira a la {turn_to} por la calle {mv_street} en {t_sum:.2f} metros.")
+            print(f"Gira a la {turn_to} por la calle {mv_street} en {int(t_sum)} metros.")
 
 
             
@@ -385,7 +382,9 @@ def main():
         coords,direction = step_with_header("Buscando dirección...", seleccion_interactiva, streetmap)
         print(coords)
         time.sleep(5)
-        step_with_header("Calculando rutas",calculo_rutas,coords,directed_graph)
+        path = step_with_header("Calculando rutas",calculo_rutas,coords,directed_graph)
+        time.sleep(10)
+        step_with_header("Mostrando Instrucciones...",instrucciones,path,directed_graph)
         time.sleep(2000000)
         step_with_header("¡Proceso completado con éxito!")
     else:
