@@ -353,6 +353,8 @@ def procesa_grafo(multidigrafo:nx.MultiDiGraph) -> nx.DiGraph:
         print(f"{Rojo}No se construyo bien{Normal}")
     return directed_graph
 
+
+
 def explora_grafo(graph:nx.DiGraph)->None:
     """
     Explora los datos de nodos y aristas del grafo y lo dibuja basado en la posición geográfica.

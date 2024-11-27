@@ -433,9 +433,17 @@ def determinar_giro(bearing1: float, bearing2: float) -> str:
     else:
         return "Izquierda"
     
+flecha_arriba = "⬆️"
+flecha_derecha = "➡️"
+flecha_izquierda = "⬅️"
+Normal = "\033[0m"
+Azul = "\033[34m"
+Rojo = "\033[31m"
+Verde = "\033[32m"
+
 def instrucciones(path: List[int], graph: nx.Graph, max_distance: float = 100) -> None:
     """
-    Genera instrucciones basadas en un camino de nodos en un grafo.
+    Genera instrucciones basadas en un camino de nodos en un grafo con un diseño visual atractivo.
 
     Args:
         path (List[int]): 
@@ -449,29 +457,19 @@ def instrucciones(path: List[int], graph: nx.Graph, max_distance: float = 100) -
     # Obtener los nodos del camino
     study_nodes = [graph.nodes[path[j]] for j in range(len(path))]
     # Obtener las aristas entre los nodos del camino
-    streets = [graph.edges[path[j], path[j+1]] for j in range(len(path) - 1)]
+    streets = [graph.edges[path[j], path[j + 1]] for j in range(len(path) - 1)]
 
     # Identificar y corregir calles sin nombre
     fail_index_one = [j for j, street in enumerate(streets) if "name" not in street or street["name"] is None]
     for idx in fail_index_one:
-        if idx < len(streets) - 1:
-            if idx > 0 and streets[idx - 1].get("name") == streets[idx + 1].get("name"):
-                streets[idx]["name"] = streets[idx - 1]["name"]
-            else:
-                streets[idx]["name"] = streets[idx + 1].get("name", "Unknown Street")
-        else:
-            streets[idx]["name"] = streets[idx - 1].get("name", "Unknown Street")
+        streets[idx]["name"] = None  # Explicitamente sin nombre
 
-    # Manejar calles con nombres no válidos
-    fail_index_two = [j for j, street in enumerate(streets) if not isinstance(street.get("name", None), str)]
-    for idx in fail_index_two:
-        if idx < len(streets) - 1:
-            if idx > 0 and streets[idx - 1].get("name") == streets[idx + 1].get("name"):
-                streets[idx]["name"] = streets[idx - 1]["name"]
-            else:
-                streets[idx]["name"] = streets[idx + 1].get("name", "Unknown Street")
-        else:
-            streets[idx]["name"] = streets[idx - 1].get("name", "Unknown Street")
+    # Verificar y calcular el atributo 'distance' si no existe
+    for idx, street in enumerate(streets):
+        if "distance" not in street or street["distance"] is None:
+            origen = path[idx]
+            destino = path[idx + 1]
+            street["distance"] = aplicar_peso_corto(graph, origen, destino)
 
     # Variable para rastrear la última instrucción generada
     last_instruction = {"street": None, "distance": 0}
@@ -484,38 +482,44 @@ def instrucciones(path: List[int], graph: nx.Graph, max_distance: float = 100) -
 
         # Acumular distancia mientras sea la misma calle
         while j < len(path) - 1 and streets[j]["name"] == current_street:
-            e_sum += aplicar_peso_corto(graph, path[j], path[j+1])
+            e_sum += streets[j]["distance"]
             j += 1
+
+        # Obtener nombre de la calle destino
+        next_street = streets[j]["name"] if j < len(streets) else "Destino final"
 
         # Evitar imprimir instrucciones redundantes
         if last_instruction["street"] != current_street or abs(last_instruction["distance"] - e_sum) > 1e-2:
-            print(f"Sigue {Verde}recto{Normal} {flecha_arriba}  por la calle {Verde}{current_street}{Normal} durante {Verde}{int(e_sum)}{Normal} metros.")
+            if current_street is None:  # Si es un carril de moto (sin nombre)
+                print(f"{flecha_arriba}  {Azul}Sigue recto{Normal} durante {Verde}{int(e_sum)} metros{Normal} hasta llegar a {Rojo}la siguiente calle.{Normal}")
+            else:
+                print(f"{flecha_arriba}  {Azul}Sigue recto{Normal} por la calle {Rojo}{current_street}{Normal} durante {Verde}{int(e_sum)} metros{Normal} hasta llegar a {Rojo}{next_street}.{Normal}")
+            print("\n")
             last_instruction = {"street": current_street, "distance": e_sum}
 
         i = j  # Avanzar al siguiente tramo de calle
 
         # Manejar giros si hay un cambio de calle
         if i < len(path) - 1:
-            t_sum = aplicar_peso_corto(graph, path[i-1], path[i])
+            t_sum = streets[i]["distance"]
             p_degrees = calcular_grados(
-                graph.nodes[path[i-2]]["x"], graph.nodes[path[i-2]]["y"],
-                graph.nodes[path[i-1]]["x"], graph.nodes[path[i-1]]["y"]
-            )
+                graph.nodes[path[i - 2]]["x"], graph.nodes[path[i - 2]]["y"],
+                graph.nodes[path[i - 1]]["x"], graph.nodes[path[i - 1]]["y"]
+            ) if i - 2 >= 0 else None
             n_degrees = calcular_grados(
-                graph.nodes[path[i-1]]["x"], graph.nodes[path[i-1]]["y"],
+                graph.nodes[path[i - 1]]["x"], graph.nodes[path[i - 1]]["y"],
                 graph.nodes[path[i]]["x"], graph.nodes[path[i]]["y"]
             )
-            turn_to = determinar_giro(n_degrees, p_degrees)
-            mv_street = streets[i]["name"]
-            if turn_to == "Derecha":
-                flecha = flecha_derecha
-            elif turn_to == "Izquierda":
-                flecha = flecha_izquierda
-            elif turn_to == "Recto": 
-                flecha = flecha_arriba
 
-            print(f"Gira a la {Verde}{turn_to}{Normal} {flecha}  por la calle {Verde}{mv_street}{Normal} en {Verde}{int(t_sum)}{Normal} metros.")
-
+            if p_degrees is not None:
+                turn_to = determinar_giro(p_degrees, n_degrees)
+                if current_street is None:  # Si es un carril de moto
+                    arrow = flecha_izquierda if turn_to == "Izquierda" else flecha_derecha
+                    print(f"{arrow}  {Azul}Muévete a la {Rojo}{turn_to}{Normal} durante {Verde}{int(t_sum)} metros.{Normal}")
+                else:
+                    arrow = flecha_izquierda if turn_to == "Izquierda" else flecha_derecha
+                    print(f"{arrow}  {Azul}Gira a la {Rojo}{turn_to}{Normal} desde {Rojo}{current_street}{Normal} hacia {Rojo}{next_street}{Normal} en {Verde}{int(t_sum)} metros.{Normal}")
+                print("\n")
 
             
             
