@@ -1,9 +1,1 @@
-VIA_PAR                             DEL
-VIA_NOMBRE                ARZOBISPO COS
-NUMERO                               20
-LATITUD                       40.439197
-LONGITUD                      -3.636139
-TOTAL_STREET    CALLE DEL ARZOBISPO COS
-DISTANCE                           1222
-NAME: 23145, DTYPE: OBJECT
 CALLE DEL ABAD JUAN CATALAN, 76
