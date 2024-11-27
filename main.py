@@ -9,9 +9,13 @@ import time
 from math import atan2, degrees, radians, sin, cos,sqrt
 import grafo_pesado as g
 import numpy as np
+from threading import Thread
+Normal = "\033[0m"
+Azul = "\033[34m"
+Rojo = "\033[31m"
+Verde = "\033[32m"
 
-
-GPS = """
+GPS = f"""{Azul}
    _____  _____    _____    _____ __     __
   / ____||  __ \  / ____|  |  __ \\ \   / /
  | |  __ | |__) || (___    | |__) |\ \_/ / 
@@ -21,7 +25,7 @@ GPS = """
                                            
                                            
 
-"""
+{Normal}"""
 
 from typing import Union, Callable, Any, Optional, Tuple, List
 
@@ -48,10 +52,10 @@ def step_with_header(
     """
     os.system('cls' if os.name == 'nt' else 'clear')  # Limpia la consola dependiendo del sistema operativo
     print(GPS)  # Imprime el encabezado estático
-    print(step_message)  # Muestra el mensaje del paso actual
+    print(f"{Azul}{step_message}{Normal}")  # Muestra el mensaje del paso actual
     if function_to_call:
         result = function_to_call(*args, **kwargs)  # Llama a la función con los argumentos proporcionados
-        return result  # Retorna el resultado de la función llamada, si existe
+        return result  
 
 def check_input(ubi_input: str) -> str:
     """
@@ -64,12 +68,12 @@ def check_input(ubi_input: str) -> str:
         str: La entrada validada en el formato correcto "Calle,número".
     """
     while "," not in ubi_input:  # Asegurarse de que la entrada contenga una coma
-        print("El formato debe de ser: 'Calle,número'")
+        print(f"{Rojo}El formato debe de ser: 'Calle,número'{Normal}")
         ubi_input = input("Introduce la ubicación de nuevo: ")
         # Validación secundaria: el número después de la coma debe ser numérico
         while "," in ubi_input and (not ubi_input.split(",")[1].isnumeric()):
-            print("El número a introducir debe de ser un número")
-            ubi_input = input("Introduce la ubicación de nuevo: ")
+            print(f"{Rojo}El número a introducir debe de ser un número{Normal}")
+            ubi_input = input(f"{Verde}Introduce la ubicación de nuevo:{Normal} ")
     
     return ubi_input
 
@@ -100,17 +104,17 @@ def seleccion_interactiva(streetmap: pd.DataFrame) -> Tuple[List[Tuple[float, fl
             pass
 
     # Mostrar ubicaciones buscadas recientemente
-    print("Ubicaciones buscadas recientemente...")
+    print(f"{Azul}Ubicaciones buscadas recientemente...{Normal}")
     with open(path_file, "r") as p:
         for line in p.readlines()[::-1]:  # Leer y mostrar líneas en orden inverso
-            print(line.rstrip())
+            print(f"{Azul}{line.rstrip()}{Normal}")
 
     ubications = ["origen", "destino"]
     coords = []
 
     for ubication in ubications:
         # Solicitar entrada de ubicación al usuario
-        ubi_input = input(f"Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): ")
+        ubi_input = input(f"{Verde}Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): {Normal}")
         ubi_input = ubi_input.strip()
 
         # Validar el formato de la entrada
@@ -122,13 +126,12 @@ def seleccion_interactiva(streetmap: pd.DataFrame) -> Tuple[List[Tuple[float, fl
             while choice != "S":
                 # Realizar búsqueda fuzzy y obtener coordenadas
                 coord, street_well_wroten = c.fuzzy_search_2(ubi_input, streetmap)
-                print("COORDENADAS: ", coord)
                 if street_well_wroten == "Calle_Iterada":
                     choice = "S"
                 else:
-                    choice = input("Escribe S si es la dirección deseada, cualquier otra cosa sino: ")
+                    choice = input(f"{Verde}Escribe S si es la dirección deseada, cualquier otra cosa sino: {Normal}")
                     if choice != "S":
-                        ubi_input = input(f"Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): ")
+                        ubi_input = input(f"{Verde}Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): {Normal}")
                 ubi_input = check_input(ubi_input)
                 ubi_input = ubi_input.upper()
 
@@ -146,9 +149,9 @@ def seleccion_interactiva(streetmap: pd.DataFrame) -> Tuple[List[Tuple[float, fl
             coords.append(coord)  # Guardar las coordenadas seleccionadas
 
         except Exception as e:
-            print(f"Error: {e}")  # Manejar errores y mostrar mensajes
+            print(f"{Rojo}Error: {e}{Normal}")  # Manejar errores y mostrar mensajes
 
-    return coords, ubi_input  # Retornar coordenadas y última entrada validada
+    return coords, ubi_input  
 
 
 def elige_modo() -> str:
@@ -165,18 +168,18 @@ def elige_modo() -> str:
             - "RS" para la ruta más rápida optimizada con señales.
     """
     # Mostrar las opciones al usuario
-    print("Tendrás tres modos de ruta a escoger:")
-    print("Ruta más corta, Ruta más rápida, ruta más rápida optimizando señales")
+    print(f"{Azul}Tendrás tres modos de ruta a escoger:{Normal}")
+    print(f"{Azul}Ruta más corta, Ruta más rápida, ruta más rápida optimizando señales{Normal}")
     
     # Solicitar la elección del usuario
-    choice = input("Para la más corta -> C \nPara la más rápida -> R\nPara la más rápida optimizada con señales -> RS\n").upper()
+    choice = input(f"{Verde}Para la más corta -> C \nPara la más rápida -> R\nPara la más rápida optimizada con señales -> RS{Normal}\n").upper()
     
     # Validar que la entrada sea correcta
     while choice not in ["C", "R", "RS"]:
-        print("Introduce una opción correcta")
-        choice = input("Para la más corta -> C \nPara la más rápida -> R\nPara la más rápida optimizada con señales -> RS\n").upper()
+        print(f"{Azul}Introduce una opción correcta{Normal}")
+        choice = input(f"{Verde}Para la más corta -> C \nPara la más rápida -> R\nPara la más rápida optimizada con señales -> RS{Normal}\n").upper()
     
-    return choice  # Retornar la elección validada
+    return choice 
 
 
 def encontrar_nodo_acc_mas_cercano(coords: List[Tuple[float, float]], G: nx.MultiDiGraph) -> List[Any]:
@@ -196,37 +199,35 @@ def encontrar_nodo_acc_mas_cercano(coords: List[Tuple[float, float]], G: nx.Mult
     closest_nodes = []  # Lista para almacenar los nodos más cercanos
     for coord in coords:
         x, y = coord  # Desempaquetar las coordenadas (longitud, latitud)
-        print(x, y)  # Mostrar las coordenadas actuales
         nodes = G.nodes(data=True)  # Obtener los nodos del grafo con sus datos
         closest_node = ox.nearest_nodes(G, x, y)  # Encontrar el nodo más cercano
         closest_nodes.append(closest_node)  # Añadir el nodo más cercano a la lista
 
-    return closest_nodes  # Retornar la lista de nodos más cercanos
+    return closest_nodes  
 
 def haversine(lat1: np.float64, lon1:np.float64, lat2:np.float64, lon2:np.float64) -> np.float64:
     """
         Method to compute the haversite distance between 2 pair of coordinates
 
-        :param lat1: first latitude
-        :param lon1: first longitude
-        :param lat2: second latitude
-        :param lon2: second longitude
+        :param lat1: primera latitud
+        :param lon1: primera longitud
+        :param lat2: segunda latitud
+        :param lon2: segunda longitud
     """
     dLat = (lat2 - lat1) * np.pi / 180.0
     dLon = (lon2 - lon1) * np.pi / 180.0
  
-    # convert to radians
+    # convertir a radianes
     lat1 = (lat1) * np.pi / 180.0
     lat2 = (lat2) * np.pi / 180.0
  
-    # apply formulae
+    # aplica la fórmula
     a = (pow(np.sin(dLat / 2), 2) +
          pow(np.sin(dLon / 2), 2) *
              np.cos(lat1) * np.cos(lat2));
     rad = 6371
     c = 2 * np.arcsin(np.sqrt(a))
 
-    # return the distance in km
     return rad * c
 
 
@@ -354,15 +355,13 @@ def calculo_rutas(coords: List[Any], graph: nx.Graph) -> List[Any]:
 
     # Encontrar los nodos más cercanos a las coordenadas proporcionadas
     nodes = encontrar_nodo_acc_mas_cercano(coords, graph)
-    print(nodes)  # Mostrar los nodos encontrados
+    
 
     # Calcular la ruta en función de la elección del usuario
     if choice == "C":
         path = g.camino_minimo(graph, aplicar_peso_corto, nodes[0], nodes[1])
-        print(path)  # Mostrar la ruta calculada
     elif choice == "R":
         path = g.camino_minimo(graph, aplicar_peso_rapido, nodes[0], nodes[1])
-        print(path)  # Mostrar la ruta calculada
     else:
         path = g.camino_minimo(graph, aplicar_peso_rapido_sem, nodes[0], nodes[1])
 
@@ -511,7 +510,7 @@ def instrucciones(path: List[int], graph: nx.Graph, max_distance: float = 100) -
 
 
 def main():
-    opt_title = input("Desea ver el título continuamente? Escribe S para ver el título continuamente: ")
+    opt_title = input(f"{Verde}Desea ver el título continuamente? Escribe S para ver el título continuamente: {Normal}")
     if opt_title.upper() == "S":
         print(GPS)
         streetmap = step_with_header("Cargando callejero...", c.carga_callejero)
@@ -522,15 +521,14 @@ def main():
         step_with_header("Explorando grafo...", c.explora_grafo, directed_graph)
         time.sleep(2)
         coords, direction = step_with_header("Buscando dirección...", seleccion_interactiva, streetmap)
-        print(coords)
         time.sleep(5)
         path = step_with_header("Calculando rutas", calculo_rutas, coords, directed_graph)  # Camino nodo
-        time.sleep(5)
+        time.sleep(5)    
         step_with_header("Mostrando Instrucciones...", instrucciones, path, directed_graph)
-        print("Dibujando el grafo con el camino calculado...")
+        print(f"{Azul}Dibujando el grafo con el camino calculado...{Normal}")
         c.dibuja_grafo(graph, path)
-        time.sleep(2000000)
-        step_with_header("¡Proceso completado con éxito!")
+        # time.sleep(10)
+        # step_with_header("¡Proceso completado con éxito!")
     else:
         print(GPS)
         street = c.carga_callejero()
@@ -544,4 +542,3 @@ def main():
 if __name__=="__main__":
     main()
     
-"Calle de Alberto Aguilera,25"

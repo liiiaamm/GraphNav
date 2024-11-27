@@ -14,6 +14,10 @@ Librería con herramientas y clases auxiliares necesarias para la representació
 
 Complétese esta descripción según las funcionalidades agregadas por el grupo.
 """
+Normal = "\033[0m"
+Azul = "\033[34m"
+Rojo = "\033[31m"
+Verde = "\033[32m"
 
 import osmnx as ox
 import networkx as nx
@@ -82,7 +86,7 @@ def conversion_to_number(pattern: str, x: str) -> Optional[float]:
             minutes = float(match.group(2))
             seconds = float(match.group(3))
         except ValueError:
-            print("Los valores no son enteros, no se puede hacer la conversión")
+            print(f"{Rojo}Los valores no son enteros, no se puede hacer la conversión{Normal}")
             return None
         # Obtener la dirección (N, S, E, W)
         direction = match.group(4)
@@ -93,7 +97,7 @@ def conversion_to_number(pattern: str, x: str) -> Optional[float]:
             return -1 * conversion
         return conversion
     else:
-        print("Los datos no tienen el formato correcto")
+        print(f"{Rojo}Los datos no tienen el formato correcto{Normal}")
         return None
     
 def carga_callejero() -> pd.DataFrame:
@@ -121,7 +125,7 @@ def carga_callejero() -> pd.DataFrame:
             usecols=["VIA_CLASE", "VIA_PAR", "VIA_NOMBRE", "NUMERO", "LATITUD", "LONGITUD"]
         )
     except Exception as e:
-        raise FileNotFoundError("El fichero no existe") from e
+        raise FileNotFoundError(f"{Rojo}El fichero no existe{Normal}") from e
 
     # Crear una copia del DataFrame para procesamiento
     copy = df.copy()
@@ -234,7 +238,7 @@ def busca_direccion(direccion:str, callejero:pd.DataFrame) -> Tuple[float,float]
         street, number = direccion.split(",")
         number = int(number.strip())
     except ValueError:
-        raise ValueError("La dirección debe estar en el formato 'Calle, Número'.")
+        raise ValueError(f"{Rojo}La dirección debe estar en el formato 'Calle, Número'.{Normal}")
 
     callejero["total_street"] = (
         callejero["VIA_CLASE"] + " " + callejero["VIA_PAR"].fillna("") + " " + callejero["VIA_NOMBRE"]
@@ -244,10 +248,10 @@ def busca_direccion(direccion:str, callejero:pd.DataFrame) -> Tuple[float,float]
     number_coincidence = street_coincidence[street_coincidence["NUMERO"] == number]
 
     if not number_coincidence.empty:
-        print(f"Se encontró la dirección exacta: {direccion.capitalize()}")
+        print(f"{Azul}Se encontró la dirección exacta: {direccion.capitalize()}{Normal}")
         return number_coincidence["LONGITUD"].iloc[0], number_coincidence["LATITUD"].iloc[0]
     else: 
-        raise AdressNotFoundError(f"La dirección no fue encontrada de forma exacta.")
+        raise AdressNotFoundError(f"{Rojo}La dirección no fue encontrada de forma exacta.{Normal}")
 
 
 
@@ -291,13 +295,13 @@ def fuzzy_search_2(direccion: str, callejero: pd.DataFrame, threshold=80) -> Tup
             # Comprobar si el número exacto está disponible
             if number in street_coincidence["NUMERO"].values:
                 match = street_coincidence[street_coincidence["NUMERO"] == number]
-                print(f"Coincidencia encontrada en la calle similar: {matched_street}, {str(number)}")
+                print(f"{Azul}Coincidencia encontrada en la calle similar: {matched_street}, {str(number)}{Normal}")
                 return (match["LONGITUD"].iloc[0],match["LATITUD"].iloc[0]), f"{matched_street}"
             else:
                 # Buscar el número más cercano
                 street_coincidence["distance"] = abs(street_coincidence["NUMERO"] - number)
                 closest_match = street_coincidence.loc[street_coincidence["distance"].idxmin()]
-                print(f"Coincidencia encontrada en la calle similar: {matched_street}, {str(number)}")
+                print(f"{Azul}Coincidencia encontrada en la calle similar: {matched_street}, {str(number)}{Normal}")
                 return (closest_match["LONGITUD"], closest_match["LATITUD"]), f"{matched_street}"
         else:
             raise AdressNotFoundError("No se encontró una dirección similar en el callejero.")
@@ -313,22 +317,21 @@ def carga_grafo() -> nx.MultiDiGraph:
     """
     try:
         if os.path.exists(MAP_FILE_NAME):
-            print(f"Cargando grafo desde el archivo {MAP_FILE_NAME}")
+            print(f"{Azul}Cargando grafo desde el archivo {MAP_FILE_NAME}{Normal}")
             graph = ox.load_graphml(MAP_FILE_NAME)
             if not isinstance(graph, nx.MultiDiGraph):
-                print("El argumento 'multidigrafo' debe ser un nx.MultiDiGraph.")
-                print("hola")
+                print(f"{Rojo}El argumento 'multidigrafo' debe ser un nx.MultiDiGraph.{Normal}")
         else:
-            print("Descargando grafo desde OpenStreetMap...")
+            print(f"{Azul}Descargando grafo desde OpenStreetMap...{Normal}")
             graph = ox.graph_from_place(PLACE_NAME,network_type="drive")
             ox.save_graphml(graph,MAP_FILE_NAME)
-            print(f"Grafo guardado exitosamente en {MAP_FILE_NAME}")
+            print(f"{Azul}Grafo guardado exitosamente en {MAP_FILE_NAME}{Normal}")
             if not isinstance(graph, nx.MultiDiGraph):
-                    print("El argumento 'multidigrafo' debe ser un nx.MultiDiGraph.")
+                    print(f"{Rojo}El argumento 'multidigrafo' debe ser un nx.MultiDiGraph.{Normal}")
         return graph
         
     except Exception as e:
-        raise ServiceNotAvailableError("No se pudo recuperar el grafo de OpenStreetMap")
+        raise ServiceNotAvailableError(f"{Rojo}No se pudo recuperar el grafo de OpenStreetMap{Normal}")
     
 
 
@@ -341,16 +344,13 @@ def procesa_grafo(multidigrafo:nx.MultiDiGraph) -> nx.DiGraph:
     Raises: None
     """
     if not isinstance(multidigrafo, nx.MultiDiGraph):
-        print("El argumento 'multidigrafo' debe ser un nx.MultiDiGraph.")
+        print(f"{Rojo}El argumento 'multidigrafo' debe ser un nx.MultiDiGraph.{Normal}")
     directed_graph = ox.convert.to_digraph(multidigrafo)
-    print("termino de procesar")
     loops = list(nx.selfloop_edges(directed_graph))  # Encuentra los bucles
     directed_graph.remove_edges_from(loops)  # Elimina todos los bucles de una vez
-    print("termino de eliminar bucles")
-    
 
     if not isinstance(directed_graph, nx.DiGraph):
-        print("No se construyo bien")
+        print(f"{Rojo}No se construyo bien{Normal}")
     return directed_graph
 
 def explora_grafo(graph:nx.DiGraph)->None:
