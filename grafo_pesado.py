@@ -123,7 +123,7 @@ def camino_minimo(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,o
     #Se itera sobre la lista al revés hasta llegar al nodo inicial
     while min_rut[-1] != origen:
         parent = acm[min_rut[-1]]
-        if parent is None:
+        if parent is None and min_rut[-1] != origen:
             raise NoWayFoundError(f"No se encontró un camino desde {origen} hasta {destino}.")
         min_rut.append(parent)
     #Se le da la vuelta a la lista para ponerla en orden y se devuelve    
