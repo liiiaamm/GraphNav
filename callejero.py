@@ -59,61 +59,92 @@ class AdressNotFoundError(Exception):
 ############## Parte 2 ##############
 
 
-def conversion_to_number(pattern,x):
-    match=re.search(pattern,x)
+def conversion_to_number(pattern: str, x: str) -> Optional[float]:
+    """
+    Convierte una cadena que representa coordenadas en grados, minutos y segundos
+    (DMS) a un número decimal.
+
+    Args:
+        pattern (str): Expresión regular para buscar el formato DMS en la cadena.
+        x (str): Cadena de entrada que contiene las coordenadas.
+
+    Returns:
+        Optional[float]: El valor convertido en decimal si tiene éxito, 
+        o None si ocurre un error o el formato no es válido.
+    """
+    # Buscar el patrón en la cadena
+    match = re.search(pattern, x)
     if match:
-        try: 
+        try:
+            # Extraer grados, minutos y segundos del patrón
             degrees = float(match.group(1))
             minutes = float(match.group(2))
             seconds = float(match.group(3))
         except ValueError:
             print("Los valores no son enteros, no se puede hacer la conversión")
             return None
+        # Obtener la dirección (N, S, E, W)
         direction = match.group(4)
-        conversion = degrees+(minutes/60)+(seconds/3600)
-        if direction in ["S","W"]:
-            return -1*conversion
+        # Calcular la conversión a formato decimal
+        conversion = degrees + (minutes / 60) + (seconds / 3600)
+        # Ajustar el signo si la dirección es S (sur) o W (oeste)
+        if direction in ["S", "W"]:
+            return -1 * conversion
         return conversion
     else:
         print("Los datos no tienen el formato correcto")
         return None
     
 def carga_callejero() -> pd.DataFrame:
-    """ Función que carga el callejero de Madrid, lo procesa y devuelve
-    un DataFrame con los datos procesados
-    
-    Args: None
+    """
+    Carga el callejero de Madrid desde un archivo CSV, lo procesa y devuelve un DataFrame
+    con los datos transformados, incluyendo las coordenadas en formato decimal.
+
+    Args:
+        None
+
     Returns:
-        Dict[object,object]: Devuelve un diccionario que indica, para cada vértice del
-            grafo, qué vértice es su padre en el árbol abarcador mínimo.
+        pd.DataFrame: DataFrame procesado con las columnas "VIA_CLASE", "VIA_PAR", 
+        "VIA_NOMBRE", "NUMERO", "LATITUD", "LONGITUD", donde las coordenadas 
+        están en formato decimal.
+
     Raises:
-        FileNotFoundError si el fichero csv con las direcciones no existe
+        FileNotFoundError: Si el archivo CSV no existe o no puede ser cargado.
     """
     try:
-
-        df = pd.read_csv(STREET_FILE_NAME, sep=";", encoding="ISO-8859-1",usecols=["VIA_CLASE", "VIA_PAR", "VIA_NOMBRE", "NUMERO", "LATITUD", "LONGITUD"])
-        
-
-        
+        # Cargar el archivo CSV con las columnas relevantes
+        df = pd.read_csv(
+            STREET_FILE_NAME,
+            sep=";",
+            encoding="ISO-8859-1",
+            usecols=["VIA_CLASE", "VIA_PAR", "VIA_NOMBRE", "NUMERO", "LATITUD", "LONGITUD"]
+        )
     except Exception as e:
-        FileNotFoundError("EL fichero no existe")
+        raise FileNotFoundError("El fichero no existe") from e
+
+    # Crear una copia del DataFrame para procesamiento
     copy = df.copy()
+
+    # Expresión regular para identificar coordenadas en formato DMS
     pattern = r"(\d{1,3})°(\d{1,2})'(\d{1,2}\.?\d*)''\s(\w)"
 
-    copy["LATITUD"] = copy["LATITUD"].apply(lambda x: conversion_to_number(pattern,x))
-    copy["LONGITUD"] = copy['LONGITUD'].apply(lambda x: conversion_to_number(pattern,x))
-    return copy 
+    # Convertir LATITUD y LONGITUD a formato decimal
+    copy["LATITUD"] = copy["LATITUD"].apply(lambda x: conversion_to_number(pattern, x))
+    copy["LONGITUD"] = copy["LONGITUD"].apply(lambda x: conversion_to_number(pattern, x))
+
+    return copy
 
 
-def dibuja_grafo(graph: nx.MultiDiGraph, path: list):
+
+def dibuja_grafo(graph: nx.MultiDiGraph, path: List[int]) -> None:
     """
     Dibuja un grafo de OpenStreetMap resaltando las aristas que están en el camino (path),
     y ajusta la vista para mostrar solo el área donde está el camino.
-    
+
     Args:
         graph (nx.MultiDiGraph): El grafo de las calles.
-        path (list): Lista de nodos que forman el camino a resaltar.
-        
+        path (List[int]): Lista de nodos que forman el camino a resaltar.
+
     Returns:
         None
     """
@@ -219,65 +250,6 @@ def busca_direccion(direccion:str, callejero:pd.DataFrame) -> Tuple[float,float]
 
 
 
-
-# def fuzzy_search(direccion:str, callejero:pd.DataFrame, threshold=80) ->Tuple[float,float]:
-#     """
-#     Función que realiza una búsqueda aproximada de una dirección en el callejero.
-    
-#     Args:
-#         direccion (str): Nombre completo de la calle con número, en formato "Calle, num".
-#         callejero (DataFrame): DataFrame con la información de las calles.
-#         threshold (float): Porcentaje de similitud necesario para que la coincidencia se detecte.
-        
-#     Returns:
-#         Tuple[float, float]: Par de float (latitud, longitud) de la dirección más cercana encontrada.
-#         str: Dirección bien escrita
-#     Raises:
-#         AdressNotFoundError: Si no se encuentra una coincidencia suficiente.
-#     """
-#     street, number = direccion.split(",")
-#     number = int(number.strip())
-
-#     callejero["total_street"] = callejero["VIA_CLASE"] + " " + callejero["VIA_PAR"].fillna("") + " " + callejero["VIA_NOMBRE"] + "," + callejero["NUMERO"].astype(str)
-#     best_match = process.extractOne(street.upper(), callejero["total_street"].unique().tolist())
-    
-#     street, number = direccion.split(",")
-#     number = int(number.strip())
-
-#     # Crear columna total para la comparación
-#     callejero["total_street"] = (
-#         callejero["VIA_CLASE"] + " " + callejero["VIA_PAR"].fillna("") + " " + callejero["VIA_NOMBRE"]
-#     )
-
-#     # Realizar búsqueda fuzzy
-#     best_match = process.extractOne(street.upper(), callejero["total_street"].unique().tolist())
-
-#     if best_match and best_match[1] >= threshold:
-#         matched_street = best_match[0]
-        
-#         street_coincidence = callejero[callejero["total_street"] == matched_street]
-#         # Filtrar las filas que coinciden con la calle encontrada
-#         street_coincidence = street_coincidence.copy()
-#         street_coincidence["distance"] = abs(street_coincidence["NUMERO"] - number)
-
-#         # Comprobar si el número exacto está disponible
-#         if number in street_coincidence["NUMERO"].values:
-        
-#             # Si el número exacto coincide, devolverlo
-#             match = street_coincidence[street_coincidence["NUMERO"] == number]
-#             print(f"Coincidencia encontrada en la calle similar: {matched_street}, {str(number)}")
-
-#             return matched_street+", "+str(number), (match["LONGITUD"].iloc[0], match["LATITUD"].iloc[0])
-#         else:
-#             # Si no coincide exactamente, buscar el número más cercano
-#             street_coincidence["distance"] = abs(street_coincidence["NUMERO"] - number)
-#             closest_match = street_coincidence.loc[street_coincidence["distance"].idxmin()]
-#             print(f"El número exacto no fue encontrado. El más cercano es: ")
-#             return (closest_match["LONGITUD"].iloc[0], closest_match["LATITTUD"].iloc[0])
-    
-#     else:
-#         raise AdressNotFoundError("No se encontró una dirección similar en el callejero.")
-
 def fuzzy_search_2(direccion: str, callejero: pd.DataFrame, threshold=80) -> Tuple[float, float]:
     """
     Función que realiza una búsqueda de una dirección en el callejero.
@@ -328,8 +300,6 @@ def fuzzy_search_2(direccion: str, callejero: pd.DataFrame, threshold=80) -> Tup
                 return (closest_match["LONGITUD"], closest_match["LATITUD"]), f"{matched_street}"
         else:
             raise AdressNotFoundError("No se encontró una dirección similar en el callejero.")
-
-############## Parte 4 ##############
 
 
 def carga_grafo() -> nx.MultiDiGraph:
@@ -423,6 +393,3 @@ def explora_grafo(graph:nx.DiGraph)->None:
         print("Todas las aristas tienen información de longitud.")
 
     pos = {nodo: (datos["x"], datos["y"]) for nodo, datos in graph.nodes(data=True)}
-    # plt.figure(figsize=(10, 10))
-    # nx.draw(graph, pos, node_size=10, edge_color="gray", with_labels=False)
-    # plt.show()
