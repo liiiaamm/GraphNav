@@ -10,6 +10,11 @@ from math import atan2, degrees, radians, sin, cos,sqrt
 import grafo_pesado as g
 import numpy as np
 from threading import Thread
+from typing import Union, Callable, Any, Optional, Tuple, List
+
+flecha_arriba = "⬆️"   
+flecha_derecha = "➡️"   
+flecha_izquierda = "⬅️"
 Normal = "\033[0m"
 Azul = "\033[34m"
 Rojo = "\033[31m"
@@ -27,8 +32,8 @@ GPS = f"""{Azul}
 
 {Normal}"""
 
-from typing import Union, Callable, Any, Optional, Tuple, List
-
+class NoWayFoundError (Exception):
+    pass
 
 def step_with_header(
     step_message: str,
@@ -69,7 +74,7 @@ def check_input(ubi_input: str) -> str:
     """
     while "," not in ubi_input:  # Asegurarse de que la entrada contenga una coma
         print(f"{Rojo}El formato debe de ser: 'Calle,número'{Normal}")
-        ubi_input = input("Introduce la ubicación de nuevo: ")
+        ubi_input = input(f"{Rojo}Introduce la ubicación de nuevo: {Normal}")
         # Validación secundaria: el número después de la coma debe ser numérico
         while "," in ubi_input and (not ubi_input.split(",")[1].strip().isnumeric()):
             print(f"{Rojo}El número a introducir debe de ser un número{Normal}")
@@ -104,7 +109,7 @@ def seleccion_interactiva(streetmap: pd.DataFrame) -> Tuple[List[Tuple[float, fl
             pass
 
     # Mostrar ubicaciones buscadas recientemente
-    print(f"{Azul}Ubicaciones buscadas recientemente...{Normal}")
+    print(f"{Azul}Últimas ubicaciones buscadas...{Normal}")
     with open(path_file, "r") as p:
         for line in p.readlines()[::-1]:  # Leer y mostrar líneas en orden inverso
             print(f"{Azul}{line.rstrip()}{Normal}")
@@ -113,45 +118,45 @@ def seleccion_interactiva(streetmap: pd.DataFrame) -> Tuple[List[Tuple[float, fl
     coords = []
 
     for ubication in ubications:
-        # Solicitar entrada de ubicación al usuario
-        ubi_input = input(f"{Verde}Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): {Normal}")
-        ubi_input = ubi_input.strip()
+        while True:
+            # Solicitar entrada de ubicación al usuario
+            ubi_input = input(f"{Verde}Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): {Normal}")
+            ubi_input = ubi_input.strip()
 
-        # Validar el formato de la entrada
-        ubi_input = check_input(ubi_input)
-        ubi_input = ubi_input.upper()
+            # Validar el formato de la entrada
+            ubi_input = check_input(ubi_input)
+            ubi_input = ubi_input.upper()
+            try:
+                choice = str()
+                while choice != "S":
+                    # Realizar búsqueda fuzzy y obtener coordenadas
+                    coord, street_well_wroten = c.fuzzy_search(ubi_input, streetmap)
+                    if street_well_wroten == "Calle_Iterada":
+                        ubi_to_csv = ubi_input.upper() 
+                        choice = "S"
+                    else:
+                        ubi_to_csv = street_well_wroten.upper()
+                        choice = input(f"{Verde}Escribe S si es la dirección deseada, cualquier otra cosa sino: {Normal}")
+                        if choice != "S":
+                            ubi_input = input(f"{Verde}Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): {Normal}")
+                    ubi_input = check_input(ubi_input)
+                    ubi_input = ubi_input.upper()
 
-        try:
-            choice = str()
-            while choice != "S":
-                # Realizar búsqueda fuzzy y obtener coordenadas
-                coord, street_well_wroten = c.fuzzy_search(ubi_input, streetmap)
-                if street_well_wroten == "Calle_Iterada":
-                    ubi_to_csv = ubi_input.upper() 
-                    choice = "S"
-                else:
-                    ubi_to_csv = street_well_wroten.upper()
-                    choice = input(f"{Verde}Escribe S si es la dirección deseada, cualquier otra cosa sino: {Normal}")
-                    if choice != "S":
-                        ubi_input = input(f"{Verde}Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): {Normal}")
-                ubi_input = check_input(ubi_input)
-                ubi_input = ubi_input.upper()
+                # Actualizar el archivo de ubicaciones recientes
+                with open(path_file, "r+") as p:
+                    lines = p.readlines()  # Leer todas las líneas existentes
+                    if len(lines) >= 5:  # Limitar a 5 líneas
+                        lines = lines[1:]  # Eliminar la más antigua
+                    if ubi_to_csv+"\n" not in lines:  # Verificar si ya existe
+                        lines.append(ubi_to_csv + "\n")
+                    p.seek(0)  # Volver al inicio del archivo
+                    p.writelines(lines)  # Escribir las líneas actualizadas
+                    p.truncate()  # Eliminar contenido residual si existe
 
-            # Actualizar el archivo de ubicaciones recientes
-            with open(path_file, "r+") as p:
-                lines = p.readlines()  # Leer todas las líneas existentes
-                if len(lines) >= 5:  # Limitar a 5 líneas
-                    lines = lines[1:]  # Eliminar la más antigua
-                if ubi_to_csv not in lines:  # Verificar si ya existe
-                    lines.append(ubi_to_csv + "\n")
-                p.seek(0)  # Volver al inicio del archivo
-                p.writelines(lines)  # Escribir las líneas actualizadas
-                p.truncate()  # Eliminar contenido residual si existe
-
-            coords.append(coord)  # Guardar las coordenadas seleccionadas
-
-        except Exception as e:
-            print(f"{Rojo}Error: {e}{Normal}")  # Manejar errores y mostrar mensajes
+                coords.append(coord)  # Guardar las coordenadas seleccionadas
+                break
+            except Exception as e:
+                print(f"{Rojo}Error: {e}{Normal}")  # Manejar errores y mostrar mensajes
 
     return coords, ubi_input  
 
@@ -357,17 +362,20 @@ def calculo_rutas(coords: List[Any], graph: nx.Graph) -> List[Any]:
 
     # Encontrar los nodos más cercanos a las coordenadas proporcionadas
     nodes = encontrar_nodo_acc_mas_cercano(coords, graph)
-    
 
     # Calcular la ruta en función de la elección del usuario
-    if choice == "C":
-        path = g.camino_minimo(graph, aplicar_peso_corto, nodes[0], nodes[1])
-    elif choice == "R":
-        path = g.camino_minimo(graph, aplicar_peso_rapido, nodes[0], nodes[1])
-    else:
-        path = g.camino_minimo(graph, aplicar_peso_rapido_sem, nodes[0], nodes[1])
-
-    return path
+    try:
+        if choice == "C":
+            path = g.camino_minimo(graph, aplicar_peso_corto, nodes[0], nodes[1])
+        elif choice == "R":
+            path = g.camino_minimo(graph, aplicar_peso_rapido, nodes[0], nodes[1])
+        else:
+            path = g.camino_minimo(graph, aplicar_peso_rapido_sem, nodes[0], nodes[1])
+        return path
+    
+    except (TypeError, NoWayFoundError) as e:
+        print(e)
+        return None
 
 
 def calcular_grados(long1: float, lat1: float, long2: float, lat2: float) -> float:
@@ -481,7 +489,7 @@ def instrucciones(path: List[int], graph: nx.Graph, max_distance: float = 100) -
 
         # Evitar imprimir instrucciones redundantes
         if last_instruction["street"] != current_street or abs(last_instruction["distance"] - e_sum) > 1e-2:
-            print(f"Sigue recto por la calle {current_street} durante {int(e_sum)} metros.")
+            print(f"Sigue {Verde}recto{Normal} {flecha_arriba}  por la calle {Verde}{current_street}{Normal} durante {Verde}{int(e_sum)}{Normal} metros.")
             last_instruction = {"street": current_street, "distance": e_sum}
 
         i = j  # Avanzar al siguiente tramo de calle
@@ -499,7 +507,14 @@ def instrucciones(path: List[int], graph: nx.Graph, max_distance: float = 100) -
             )
             turn_to = determinar_giro(n_degrees, p_degrees)
             mv_street = streets[i]["name"]
-            print(f"Gira a la {turn_to} por la calle {mv_street} en {int(t_sum)} metros.")
+            if turn_to == "Derecha":
+                flecha = flecha_derecha
+            elif turn_to == "Izquierda":
+                flecha = flecha_izquierda
+            elif turn_to == "Recto": 
+                flecha = flecha_arriba
+
+            print(f"Gira a la {Verde}{turn_to}{Normal} {flecha}  por la calle {Verde}{mv_street}{Normal} en {Verde}{int(t_sum)}{Normal} metros.")
 
 
             
@@ -525,12 +540,11 @@ def main():
         coords, direction = step_with_header("Buscando dirección...", seleccion_interactiva, streetmap)
         time.sleep(5)
         path = step_with_header("Calculando rutas", calculo_rutas, coords, directed_graph)  # Camino nodo
-        time.sleep(5)    
-        step_with_header("Mostrando Instrucciones...", instrucciones, path, directed_graph)
-        print(f"{Azul}Dibujando el grafo con el camino calculado...{Normal}")
-        c.dibuja_grafo(graph, path)
-        # time.sleep(10)
-        # step_with_header("¡Proceso completado con éxito!")
+        time.sleep(5)
+        if path is not None:   
+            step_with_header("Mostrando Instrucciones...", instrucciones, path, directed_graph)
+            print(f"{Azul}Dibujando el grafo con el camino calculado...{Normal}")
+            c.dibuja_grafo(graph, path)
     else:
         print(GPS)
         street = c.carga_callejero()
