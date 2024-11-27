@@ -71,7 +71,7 @@ def check_input(ubi_input: str) -> str:
         print(f"{Rojo}El formato debe de ser: 'Calle,número'{Normal}")
         ubi_input = input("Introduce la ubicación de nuevo: ")
         # Validación secundaria: el número después de la coma debe ser numérico
-        while "," in ubi_input and (not ubi_input.split(",")[1].isnumeric()):
+        while "," in ubi_input and (not ubi_input.split(",")[1].strip().isnumeric()):
             print(f"{Rojo}El número a introducir debe de ser un número{Normal}")
             ubi_input = input(f"{Verde}Introduce la ubicación de nuevo:{Normal} ")
     
@@ -125,10 +125,12 @@ def seleccion_interactiva(streetmap: pd.DataFrame) -> Tuple[List[Tuple[float, fl
             choice = str()
             while choice != "S":
                 # Realizar búsqueda fuzzy y obtener coordenadas
-                coord, street_well_wroten = c.fuzzy_search_2(ubi_input, streetmap)
+                coord, street_well_wroten = c.fuzzy_search(ubi_input, streetmap)
                 if street_well_wroten == "Calle_Iterada":
+                    ubi_to_csv = ubi_input.upper() 
                     choice = "S"
                 else:
+                    ubi_to_csv = street_well_wroten.upper()
                     choice = input(f"{Verde}Escribe S si es la dirección deseada, cualquier otra cosa sino: {Normal}")
                     if choice != "S":
                         ubi_input = input(f"{Verde}Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): {Normal}")
@@ -140,8 +142,8 @@ def seleccion_interactiva(streetmap: pd.DataFrame) -> Tuple[List[Tuple[float, fl
                 lines = p.readlines()  # Leer todas las líneas existentes
                 if len(lines) >= 5:  # Limitar a 5 líneas
                     lines = lines[1:]  # Eliminar la más antigua
-                if ubi_input not in lines:  # Verificar si ya existe
-                    lines.append(ubi_input + "\n")
+                if ubi_to_csv not in lines:  # Verificar si ya existe
+                    lines.append(ubi_to_csv + "\n")
                 p.seek(0)  # Volver al inicio del archivo
                 p.writelines(lines)  # Escribir las líneas actualizadas
                 p.truncate()  # Eliminar contenido residual si existe
