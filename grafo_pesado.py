@@ -12,7 +12,8 @@ Integrantes:
 Descripción:
 Librería para el análisis de grafos pesados.
 """
-
+class NoWayFoundError (Exception):
+    pass
 from typing import List,Tuple,Dict,Callable,Union
 import networkx as nx
 import sys
@@ -48,15 +49,19 @@ def dijkstra(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,object
         Dict[object,object]: Devuelve un diccionario que indica, para cada vértice alcanzable
             desde "origen", qué vértice es su padre en el árbol de caminos mínimos.
     Raises:
-        TypeError: Si origen no es "hashable".
+        TypeError: Si origen no es "hashable"
+        NoWayFoundError: Si no encuentra el camino
+        
     Example:
         Si G.dijksra(1)={2:1, 3:2, 4:1} entonces 1 es padre de 2 y de 4 y 2 es padre de 3.
         En particular, un camino mínimo desde 1 hasta 3 sería 1->2->3.
     """
     #Se verifica que el origen sea "hashable"
+    if origen not in G:
+        raise NoWayFoundError(f"El nodo de origen no está en el grafo o no tiene camino definido.")
     try:
         hash(origen)
-    except TypeError:
+    except:
         raise TypeError("El origen no es hashable. Usa un tipo inmutable como int, str, tuple, etc.")
     
     # Inicialización
@@ -104,22 +109,26 @@ def camino_minimo(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,o
         Si dijksra(G,peso,1,4)=[1,5,2,4] entonces el camino más corto en G entre 1 y 4 es 1->5->2->4.
     Raises:
         TypeError: Si origen o destino no son "hashable".
+        NoWayFoundError: Si no encuentra el camino
     """
     min_rut = [destino]
     #Se ejecuta dijkstra
     try:
-        acm=dijkstra(G,peso,origen)
-    except:
-        raise TypeError("El origen o el destino no es hashable")
-    #Se comprueba si el nodo final existe
+        acm = dijkstra(G, peso, origen)
+    except (TypeError, NoWayFoundError) as e:
+        raise e
+    
     if destino not in acm or acm[destino] is None:
-        raise TypeError("El destino introducido no está en el grafo")
+        raise NoWayFoundError("El destino introducido no está en el grafo")
     #Se itera sobre la lista al revés hasta llegar al nodo inicial
     while min_rut[-1] != origen:
         parent = acm[min_rut[-1]]
+        if parent is None:
+            raise NoWayFoundError(f"No se encontró un camino desde {origen} hasta {destino}.")
         min_rut.append(parent)
     #Se le da la vuelta a la lista para ponerla en orden y se devuelve    
-    return min_rut.reverse()
+    min_rut.reverse()
+    return min_rut
 
 
 
@@ -135,7 +144,7 @@ def prim(G: nx.Graph, peso: Callable[[nx.Graph, object, object], float]) -> Dict
 
     Returns:
         Dict[object, object]: Diccionario que indica el padre de cada nodo en el Árbol Abarcador Mínimo.
-                              Los nodos raíces tendrán `None` como padre.
+        Los nodos raíces tendrán `None` como padre.
     """
     padre = {v: None for v in G.nodes}
     visitado = set()
