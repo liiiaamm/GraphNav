@@ -42,8 +42,8 @@ def check_input(ubi_input:str):
         while "," in ubi_input and (not ubi_input.split(",")[1].isnumeric()):
             print("El número a introducir debe de ser un número")
         ubi_input = input("Introduce la ubicación de nuevo: ")
-
     return ubi_input
+
 def seleccion_interactiva(streetmap:pd.DataFrame):
     path_file = "results/latest_results.txt"
     directory = os.path.dirname(path_file) 
@@ -58,7 +58,7 @@ def seleccion_interactiva(streetmap:pd.DataFrame):
     with open(path_file, "r") as p:
         for line in p.readlines()[::-1]:
             print(line.rstrip())
-    ubications = ["inicio", "final"]
+    ubications = ["origen", "destino"]
     coords = []
     for ubication in ubications:
         ubi_input = input(f"Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): ")
@@ -66,26 +66,38 @@ def seleccion_interactiva(streetmap:pd.DataFrame):
 
         ubi_input=check_input(ubi_input)
         ubi_input = ubi_input.upper()
-
-        print("Ubicación introducida en el formato correcto")
-        print("Buscando coincidencias con la ubicación en la base de datos...")
         try:
             choice=str()
             while choice != "S":
-                street_well_wroten,coord = c.fuzzy_search(ubi_input,streetmap)
-                print(f"Se encontró una calle similar a la introducida: {street_well_wroten.capitalize()}")
-                choice = input("Escribe S si es la indicada y cualquier otra cosa sino: ")
+                coord, street_well_wroten = c.fuzzy_search_2(ubi_input,streetmap)
+                print("COORDENADAS: ",coord)
+                if street_well_wroten == "Calle_Iterada":
+                    choice = "S"
+                else:    
+                    choice = input("Escribe S si es la dirección deseada, cualquier otra cosa sino: ")
+                    if choice != "S":
+                        ubi_input = input(f"Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): ")
                 ubi_input=check_input(ubi_input)
                 ubi_input = ubi_input.upper()
 
             with open(path_file, "r+") as p:
+                # Leer todas las líneas existentes
                 lines = p.readlines()
-                if (ubi_input + "\n") not in lines:
-                    p.write(ubi_input+"\n")
+                # Si hay más de 5 líneas, elimina las más antiguas
+                if len(lines) >= 5:
+                    lines = lines[1:]  # Elimina la primera línea (la más antigua)
+                # Verificar si la entrada ya existe
+                if ubi_input not in lines:
+                    lines.append(ubi_input"+\n")  # Añadir solo si no existe
+                # Reescribir el archivo con las nuevas líneas
+                p.seek(0)  # Volver al principio del archivo
+                p.writelines(lines)  # Escribir las líneas actualizadas
+                p.truncate()  # Asegurar que el archivo no contenga contenido residual
+
             coords.append(coord)
 
         except Exception as e:
-            print(e)
+            print(f"Error: {e}")
 
     return coords,ubi_input
 
@@ -369,7 +381,7 @@ def instrucciones(path: list, graph: nx.Graph, max_distance: float = 100):
 
 
 def main():
-    opt_title = input("Desea ver el título continuamente? Escribe S para ver el título continuamente")
+    opt_title = input("Desea ver el título continuamente? Escribe S para ver el título continuamente: ")
     if opt_title.upper() == "S":
         print(GPS)
         streetmap = step_with_header("Cargando callejero...", c.carga_callejero)
@@ -379,20 +391,22 @@ def main():
         time.sleep(2)
         step_with_header("Explorando grafo...", c.explora_grafo, directed_graph)
         time.sleep(2)
-        coords,direction = step_with_header("Buscando dirección...", seleccion_interactiva, streetmap)
+        coords, direction = step_with_header("Buscando dirección...", seleccion_interactiva, streetmap)
         print(coords)
         time.sleep(5)
-        path = step_with_header("Calculando rutas",calculo_rutas,coords,directed_graph)
-        time.sleep(10)
-        step_with_header("Mostrando Instrucciones...",instrucciones,path,directed_graph)
+        path = step_with_header("Calculando rutas", calculo_rutas, coords, directed_graph)  # Camino nodo
+        time.sleep(5)
+        step_with_header("Mostrando Instrucciones...", instrucciones, path, directed_graph)
+        print("Dibujando el grafo con el camino calculado...")
+        c.dibuja_grafo(graph, path)
         time.sleep(2000000)
         step_with_header("¡Proceso completado con éxito!")
     else:
         print(GPS)
-        street=c.carga_callejero()
-        direction=c.busca_direccion("Calle de Alberto Aguilera, 1",street)
-        graph=c.carga_grafo()
-        directed_graph=c.procesa_grafo(graph)
+        street = c.carga_callejero()
+        direction = c.busca_direccion("Calle de Alberto Aguilera, 1", street)
+        graph = c.carga_grafo()
+        directed_graph = c.procesa_grafo(graph)
         c.explora_grafo(directed_graph)
 
 

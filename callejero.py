@@ -105,7 +105,78 @@ def carga_callejero() -> pd.DataFrame:
     return copy 
 
 
+def dibuja_grafo(graph: nx.MultiDiGraph, path: list):
+    """
+    Dibuja un grafo de OpenStreetMap resaltando las aristas que están en el camino (path),
+    y ajusta la vista para mostrar solo el área donde está el camino.
+    
+    Args:
+        graph (nx.MultiDiGraph): El grafo de las calles.
+        path (list): Lista de nodos que forman el camino a resaltar.
+        
+    Returns:
+        None
+    """
+    # Asegurarse de que los nodos del path están en el grafo
+    valid_path = [node for node in path if node in graph.nodes]
+    
+    # Obtener los colores para las aristas
+    edge_colors = []
+    edge_widths = []
+    edges = list(graph.edges(keys=True))
+    path_edges = list(zip(valid_path[:-1], valid_path[1:]))
 
+    for u, v, key in edges:
+        if (u, v) in path_edges or (v, u) in path_edges:
+            edge_colors.append("red")  # Resaltar las aristas del camino en rojo
+            edge_widths.append(2)      # Ancho de línea más grueso para el camino
+        else:
+            edge_colors.append("gray")  # Resto de las aristas en gris
+            edge_widths.append(0.5)     # Ancho de línea por defecto
+
+    # Obtener los colores y tamaños para los nodos
+    node_colors = []
+    node_sizes = []
+    for node in graph.nodes():
+        if node == valid_path[0]:
+            node_colors.append("green")  # Nodo inicial en verde
+            node_sizes.append(100)       # Tamaño más grande
+        elif node == valid_path[-1]:
+            node_colors.append("red")    # Nodo final en rojo
+            node_sizes.append(100)       # Tamaño más grande
+        else:
+            node_colors.append("gray")   # Otros nodos en gris
+            node_sizes.append(30)        # Tamaño por defecto
+
+    # Dibujar el grafo sin mostrarlo aún
+    fig, ax = ox.plot_graph(
+        graph,
+        node_color=node_colors,
+        node_size=node_sizes,
+        edge_linewidth=edge_widths,
+        edge_color=edge_colors,
+        show=False,
+        close=False
+    )
+
+    # Ajustar los límites del eje para centrarse en el camino
+    # Obtener las coordenadas de los nodos en el camino
+    x_values = [graph.nodes[node]['x'] for node in valid_path]
+    y_values = [graph.nodes[node]['y'] for node in valid_path]
+
+    # Calcular el bounding box con un margen
+    margin = 0.001  # Puedes ajustar este valor según sea necesario
+    min_x = min(x_values) - margin
+    max_x = max(x_values) + margin
+    min_y = min(y_values) - margin
+    max_y = max(y_values) + margin
+
+    # Establecer los límites del eje
+    ax.set_xlim(min_x, max_x)
+    ax.set_ylim(min_y, max_y)
+
+    # Mostrar el gráfico
+    plt.show()
 
 
 
@@ -127,82 +198,136 @@ def busca_direccion(direccion:str, callejero:pd.DataFrame) -> Tuple[float,float]
         busca_direccion("Calle de Alberto Aguilera, 23", data)=(40.42998055555555,3.7112583333333333)
         busca_direccion("Calle de Alberto Aguilera, 25", data)=(40.43013055555555,3.7126916666666667)
     """
-    street,number = direccion.split(",")
-    callejero["total_street"] = callejero["VIA_CLASE"] + " " + callejero["VIA_PAR"].fillna("") + " " + callejero["VIA_NOMBRE"]
-    
-    street_coincidence = callejero[callejero['total_street'] == street.upper()] 
-    number_coincidence = street_coincidence[street_coincidence["NUMERO"]==int(number.strip())]
     try:
+        street, number = direccion.split(",")
+        number = int(number.strip())
+    except ValueError:
+        raise ValueError("La dirección debe estar en el formato 'Calle, Número'.")
 
-        if len(number_coincidence) <=0:
-            raise AdressNotFoundError("La calle no fue encontrada")
-        else:
-            return (number_coincidence["LATITUD"].iloc[0],number_coincidence["LONGITUD"].iloc[0])
-        
-    except AdressNotFoundError as a_e:
-        print(a_e)
-
-
-
-
-def fuzzy_search(direccion:str, callejero:pd.DataFrame, threshold=80) ->Tuple[float,float]:
-    """
-    Función que realiza una búsqueda aproximada de una dirección en el callejero.
-    
-    Args:
-        direccion (str): Nombre completo de la calle con número, en formato "Calle, num".
-        callejero (DataFrame): DataFrame con la información de las calles.
-        threshold (float): Porcentaje de similitud necesario para que la coincidencia se detecte.
-        
-    Returns:
-        Tuple[float, float]: Par de float (latitud, longitud) de la dirección más cercana encontrada.
-        str: Dirección bien escrita
-    Raises:
-        AdressNotFoundError: Si no se encuentra una coincidencia suficiente.
-    """
-    street, number = direccion.split(",")
-    number = int(number.strip())
-    callejero["total_street"] = callejero["VIA_CLASE"] + " " + callejero["VIA_PAR"].fillna("") + " " + callejero["VIA_NOMBRE"] + "," + callejero["NUMERO"].astype(str)
-    best_match = process.extractOne(street.upper(), callejero["total_street"].unique().tolist())
-    
-    street, number = direccion.split(",")
-    number = int(number.strip())
-
-    # Crear columna total para la comparación
     callejero["total_street"] = (
         callejero["VIA_CLASE"] + " " + callejero["VIA_PAR"].fillna("") + " " + callejero["VIA_NOMBRE"]
     )
 
-    # Realizar búsqueda fuzzy
-    best_match = process.extractOne(street.upper(), callejero["total_street"].unique().tolist())
+    street_coincidence = callejero[callejero['total_street'] == street.upper()]
+    number_coincidence = street_coincidence[street_coincidence["NUMERO"] == number]
 
-    if best_match and best_match[1] >= threshold:
-        matched_street = best_match[0]
-        
-        street_coincidence = callejero[callejero["total_street"] == matched_street]
-        # Filtrar las filas que coinciden con la calle encontrada
-        street_coincidence = street_coincidence.copy()
-        street_coincidence["distance"] = abs(street_coincidence["NUMERO"] - number)
+    if not number_coincidence.empty:
+        print(f"Se encontró la dirección exacta: {direccion.capitalize()}")
+        return number_coincidence["LONGITUD"].iloc[0], number_coincidence["LATITUD"].iloc[0]
+    else: 
+        raise AdressNotFoundError(f"La dirección no fue encontrada de forma exacta.")
 
-        # Comprobar si el número exacto está disponible
-        if number in street_coincidence["NUMERO"].values:
-        
-            # Si el número exacto coincide, devolverlo
-            match = street_coincidence[street_coincidence["NUMERO"] == number]
-            return matched_street+", "+str(number), (match["LONGITUD"].iloc[0], match["LATITUD"].iloc[0])
-        else:
-            # Si no coincide exactamente, buscar el número más cercano
-            street_coincidence["distance"] = abs(street_coincidence["NUMERO"] - number)
-            closest_match = street_coincidence.loc[street_coincidence["distance"].idxmin()]
-            return matched_street+", "+str(closest_match["NUMERO"]), (closest_match["LONGITUD"], closest_match["LATITTUD"])
+
+
+
+# def fuzzy_search(direccion:str, callejero:pd.DataFrame, threshold=80) ->Tuple[float,float]:
+#     """
+#     Función que realiza una búsqueda aproximada de una dirección en el callejero.
     
-    else:
-        raise AdressNotFoundError("No se encontró una dirección similar en el callejero.")
+#     Args:
+#         direccion (str): Nombre completo de la calle con número, en formato "Calle, num".
+#         callejero (DataFrame): DataFrame con la información de las calles.
+#         threshold (float): Porcentaje de similitud necesario para que la coincidencia se detecte.
+        
+#     Returns:
+#         Tuple[float, float]: Par de float (latitud, longitud) de la dirección más cercana encontrada.
+#         str: Dirección bien escrita
+#     Raises:
+#         AdressNotFoundError: Si no se encuentra una coincidencia suficiente.
+#     """
+#     street, number = direccion.split(",")
+#     number = int(number.strip())
 
+#     callejero["total_street"] = callejero["VIA_CLASE"] + " " + callejero["VIA_PAR"].fillna("") + " " + callejero["VIA_NOMBRE"] + "," + callejero["NUMERO"].astype(str)
+#     best_match = process.extractOne(street.upper(), callejero["total_street"].unique().tolist())
+    
+#     street, number = direccion.split(",")
+#     number = int(number.strip())
 
+#     # Crear columna total para la comparación
+#     callejero["total_street"] = (
+#         callejero["VIA_CLASE"] + " " + callejero["VIA_PAR"].fillna("") + " " + callejero["VIA_NOMBRE"]
+#     )
 
+#     # Realizar búsqueda fuzzy
+#     best_match = process.extractOne(street.upper(), callejero["total_street"].unique().tolist())
 
+#     if best_match and best_match[1] >= threshold:
+#         matched_street = best_match[0]
+        
+#         street_coincidence = callejero[callejero["total_street"] == matched_street]
+#         # Filtrar las filas que coinciden con la calle encontrada
+#         street_coincidence = street_coincidence.copy()
+#         street_coincidence["distance"] = abs(street_coincidence["NUMERO"] - number)
 
+#         # Comprobar si el número exacto está disponible
+#         if number in street_coincidence["NUMERO"].values:
+        
+#             # Si el número exacto coincide, devolverlo
+#             match = street_coincidence[street_coincidence["NUMERO"] == number]
+#             print(f"Coincidencia encontrada en la calle similar: {matched_street}, {str(number)}")
+
+#             return matched_street+", "+str(number), (match["LONGITUD"].iloc[0], match["LATITUD"].iloc[0])
+#         else:
+#             # Si no coincide exactamente, buscar el número más cercano
+#             street_coincidence["distance"] = abs(street_coincidence["NUMERO"] - number)
+#             closest_match = street_coincidence.loc[street_coincidence["distance"].idxmin()]
+#             print(f"El número exacto no fue encontrado. El más cercano es: ")
+#             return (closest_match["LONGITUD"].iloc[0], closest_match["LATITTUD"].iloc[0])
+    
+#     else:
+#         raise AdressNotFoundError("No se encontró una dirección similar en el callejero.")
+
+def fuzzy_search_2(direccion: str, callejero: pd.DataFrame, threshold=80) -> Tuple[float, float]:
+    """
+    Función que realiza una búsqueda de una dirección en el callejero.
+    Primero intenta una búsqueda exacta usando busca_direccion.
+    Si no la encuentra, realiza una búsqueda aproximada.
+ 
+    Args:
+        direccion (str): Nombre completo de la calle con número, en formato "Calle, num".
+        callejero (DataFrame): DataFrame con la información de las calles.
+        threshold (float): Porcentaje de similitud necesario para que la coincidencia se detecte.
+ 
+    Returns:
+        Tuple[float, float]: Par de float (latitud, longitud) de la dirección encontrada.
+        str: Dirección bien escrita (si se usó la búsqueda aproximada).
+ 
+    Raises:
+        AdressNotFoundError: Si no se encuentra una coincidencia suficiente.
+    """
+    try:
+        # Intentamos la búsqueda exacta
+        coords = busca_direccion(direccion, callejero)
+        return coords, "Calle_Iterada"  # Devolvemos también la dirección original
+    except AdressNotFoundError:
+        # Si no se encuentra, realizamos la búsqueda aproximada
+        street, number = direccion.split(",")
+        number = int(number.strip())
+        callejero["total_street"] = (
+            callejero["VIA_CLASE"] + " " + callejero["VIA_PAR"].fillna("") + " " + callejero["VIA_NOMBRE"]
+        )
+        unique_streets = callejero["total_street"].unique().tolist()
+ 
+        best_match = process.extractOne(street.upper(), unique_streets)
+ 
+        if best_match and best_match[1] >= threshold:
+            matched_street = best_match[0]
+            street_coincidence = callejero[callejero["total_street"] == matched_street].copy()
+ 
+            # Comprobar si el número exacto está disponible
+            if number in street_coincidence["NUMERO"].values:
+                match = street_coincidence[street_coincidence["NUMERO"] == number]
+                print(f"Coincidencia encontrada en la calle similar: {matched_street}, {str(number)}")
+                return (match["LONGITUD"].iloc[0],match["LATITUD"].iloc[0]), f"{matched_street}"
+            else:
+                # Buscar el número más cercano
+                street_coincidence["distance"] = abs(street_coincidence["NUMERO"] - number)
+                closest_match = street_coincidence.loc[street_coincidence["distance"].idxmin()]
+                print(f"Coincidencia encontrada en la calle similar: {matched_street}, {str(number)}")
+                return (closest_match["LONGITUD"], closest_match["LATITUD"]), f"{matched_street}"
+        else:
+            raise AdressNotFoundError("No se encontró una dirección similar en el callejero.")
 
 ############## Parte 4 ##############
 
@@ -229,7 +354,6 @@ def carga_grafo() -> nx.MultiDiGraph:
             print(f"Grafo guardado exitosamente en {MAP_FILE_NAME}")
             if not isinstance(graph, nx.MultiDiGraph):
                     print("El argumento 'multidigrafo' debe ser un nx.MultiDiGraph.")
-        fig, ax = ox.plot_graph(graph, node_size=0, edge_linewidth=0.5)
         return graph
         
     except Exception as e:
