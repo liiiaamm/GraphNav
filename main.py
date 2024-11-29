@@ -34,6 +34,8 @@ GPS = f"""{Azul}
 
 class NoWayFoundError (Exception):
     pass
+class CloseGPS (Exception):
+    pass
 
 def step_with_header(
     step_message: str,
@@ -58,9 +60,12 @@ def step_with_header(
     os.system('cls' if os.name == 'nt' else 'clear')  # Limpia la consola dependiendo del sistema operativo
     print(GPS)  # Imprime el encabezado estático
     print(f"{Azul}{step_message}{Normal}")  # Muestra el mensaje del paso actual
-    if function_to_call:
-        result = function_to_call(*args, **kwargs)  # Llama a la función con los argumentos proporcionados
-        return result  
+    try:
+        if function_to_call:
+            result = function_to_call(*args, **kwargs)  # Llama a la función con los argumentos proporcionados
+            return result  
+    except:
+        return None
 
 def check_input(ubi_input: str) -> str:
     """
@@ -120,7 +125,16 @@ def seleccion_interactiva(streetmap: pd.DataFrame) -> Tuple[List[Tuple[float, fl
     for ubication in ubications:
         while True:
             # Solicitar entrada de ubicación al usuario
-            ubi_input = input(f"{Verde}Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): {Normal}")
+            if ubication == "origen":
+                print("Si desea salir del GPS, pulse intro sin escribir nada")
+                ubi_input = input(f"{Verde}Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): {Normal}")
+                if ubi_input == "":
+                    coords = None
+                    return coords, ubi_input
+                
+            elif ubication == "destino":
+                ubi_input = input(f"{Verde}Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): {Normal}")
+
             ubi_input = ubi_input.strip()
 
             # Validar el formato de la entrada
@@ -531,31 +545,26 @@ def instrucciones(path: List[int], graph: nx.Graph, max_distance: float = 100) -
 
 
 def main():
-    opt_title = input(f"{Verde}Desea ver el título continuamente? Escribe S para ver el título continuamente: {Normal}")
-    if opt_title.upper() == "S":
-        print(GPS)
-        streetmap = step_with_header("Cargando callejero...", c.carga_callejero)
-        graph = step_with_header("Cargando grafo...", c.carga_grafo)
-        time.sleep(2)
-        directed_graph = step_with_header("Procesando grafo...", c.procesa_grafo, graph)
-        time.sleep(2)
-        step_with_header("Explorando grafo...", c.explora_grafo, directed_graph)
-        time.sleep(2)
+    print(GPS)
+    streetmap = step_with_header("Cargando callejero...", c.carga_callejero)
+    graph = step_with_header("Cargando grafo...", c.carga_grafo)
+    time.sleep(2)
+    directed_graph = step_with_header("Procesando grafo...", c.procesa_grafo, graph)
+    time.sleep(2)
+    step_with_header("Explorando grafo...", c.explora_grafo, directed_graph)
+    time.sleep(2)
+    while True: 
         coords, direction = step_with_header("Buscando dirección...", seleccion_interactiva, streetmap)
-        time.sleep(5)
+        time.sleep(1)
+        if direction == "":
+            print(f"{Azul}Gracias por utilizar nuestro GPS!{Normal}")
+            break
         path = step_with_header("Calculando rutas", calculo_rutas, coords, directed_graph)  # Camino nodo
-        time.sleep(5)
+        time.sleep(1)
         if path is not None:   
             step_with_header("Mostrando Instrucciones...", instrucciones, path, directed_graph)
             print(f"{Azul}Dibujando el grafo con el camino calculado...{Normal}")
             c.dibuja_grafo(graph, path)
-    else:
-        print(GPS)
-        street = c.carga_callejero()
-        direction = c.busca_direccion("Calle de Alberto Aguilera, 1", street)
-        graph = c.carga_grafo()
-        directed_graph = c.procesa_grafo(graph)
-        c.explora_grafo(directed_graph)
 
 
 

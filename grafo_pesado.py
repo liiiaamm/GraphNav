@@ -18,7 +18,10 @@ from typing import List,Tuple,Dict,Callable,Union
 import networkx as nx
 import sys
 from heapq import heappush, heappop
-
+Normal = "\033[0m"
+Azul = "\033[34m"
+Rojo = "\033[31m"
+Verde = "\033[32m"
 INFTY=sys.float_info.max #Distincia "infinita" entre nodos de un grafo
 
 """
@@ -113,6 +116,9 @@ def camino_minimo(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,o
     """
     min_rut = [destino]
     #Se ejecuta dijkstra
+    if origen == destino:
+        print(f"{Rojo}El origen y destino son iguales{Normal}")
+        return None
     try:
         acm = dijkstra(G, peso, origen)
     except (TypeError, NoWayFoundError) as e:
