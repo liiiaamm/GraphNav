@@ -32,8 +32,8 @@ GPS = f"""{Azul}
 
 {Normal}"""
 
-class NoWayFoundError (Exception):
-    pass
+from grafo_pesado import NoWayFoundError as NoWay
+
 class CloseGPS (Exception):
     pass
 
@@ -368,7 +368,7 @@ def calculo_rutas(coords: List[Any], graph: nx.Graph) -> List[Any]:
             path = g.camino_minimo(graph, aplicar_peso_rapido_sem, nodes[0], nodes[1])
         return path
     
-    except (TypeError, NoWayFoundError) as e:
+    except (TypeError, NoWay) as e:
         print(e)
         return None
 

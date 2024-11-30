@@ -121,7 +121,9 @@ def camino_minimo(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,o
         return None
     try:
         acm = dijkstra(G, peso, origen)
-    except (TypeError, NoWayFoundError) as e:
+    except TypeError as e:
+        raise e
+    except NoWayFoundError as e:
         raise e
     
     if destino not in acm or acm[destino] is None:
@@ -135,8 +137,6 @@ def camino_minimo(G:Union[nx.Graph, nx.DiGraph], peso:Union[Callable[[nx.Graph,o
     #Se le da la vuelta a la lista para ponerla en orden y se devuelve    
     min_rut.reverse()
     return min_rut
-
-
 
 
 def prim(G: nx.Graph, peso: Callable[[nx.Graph, object, object], float]) -> Dict[object, object]:
@@ -156,7 +156,7 @@ def prim(G: nx.Graph, peso: Callable[[nx.Graph, object, object], float]) -> Dict
     visitado = set()
     heap = []
     contador = 0  
-
+#Osamos un heap también para controlar el orden de los nodos
     nodo_inicial = list(G.nodes)[0]
     heappush(heap, (0, contador, nodo_inicial))  
     contador += 1
@@ -166,9 +166,9 @@ def prim(G: nx.Graph, peso: Callable[[nx.Graph, object, object], float]) -> Dict
 
         if nodo_actual in visitado:
             continue
-
+        #Se añaden los nodos visitados a la lista
         visitado.add(nodo_actual)
-
+        #Se observan los vecinos y se escoge el de menor peso
         for vecino in G.neighbors(nodo_actual):
             if vecino not in visitado:
                 w = peso(G, nodo_actual, vecino)
@@ -176,12 +176,12 @@ def prim(G: nx.Graph, peso: Callable[[nx.Graph, object, object], float]) -> Dict
                 contador += 1
                 if padre[vecino] is None or w < peso(G, padre[vecino], vecino):
                     padre[vecino] = nodo_actual
-
     return padre
 
 class UnionFind:
     """
-    Implementación de una estructura de unión y búsqueda (Union-Find/Disjoint Set Union).
+    Se ha investigado e implementado una clase para el algoritmo de kruskal
+    que permite unir y buscar elementos sin hacer un diccionario que crezca exponencialmente
     """
     def __init__(self, elementos):
         self.padre = {x: x for x in elementos}
@@ -213,7 +213,6 @@ class UnionFind:
                 self.rango[raiz_x] += 1
 
 
-# Algoritmo de Kruskal
 def kruskal(G: nx.Graph, peso: Callable[[nx.Graph, object, object], float]) -> List[Tuple[object, object]]:
     """
     Calcula un Árbol Abarcador Mínimo para el grafo usando el algoritmo de Kruskal.
@@ -226,22 +225,21 @@ def kruskal(G: nx.Graph, peso: Callable[[nx.Graph, object, object], float]) -> L
     Returns:
         List[Tuple[object, object]]: Lista de aristas que forman el Árbol Abarcador Mínimo.
     """
-    # Lista para almacenar las aristas del MST
     mst = []
 
-    # Ordenar las aristas por peso usando la función proporcionada
+    #Ordenamos las aristas por peso
     aristas_ordenadas = sorted(G.edges, key=lambda edge: peso(G, edge[0], edge[1]))
 
-    # Inicializar Union-Find para manejar los conjuntos
+    #Usamos la clase mencionada antes
     uf = UnionFind(G.nodes)
 
-    # Procesar las aristas
+    #Si los nodos están en el mismo conjunto lo sune
     for u, v in aristas_ordenadas:
-        if uf.find(u) != uf.find(v):  # Si los nodos no están en el mismo conjunto
-            uf.union(u, v)  # Unir los conjuntos
-            mst.append((u, v))  # Añadir la arista al MST
+        if uf.find(u) != uf.find(v): 
+            uf.union(u, v) 
+            mst.append((u, v))  
 
-            # Parada anticipada: Si el MST tiene |V| - 1 aristas, está completo
+            #Si el MST tiene aristas -1 se da como completo
             if len(mst) == len(G.nodes) - 1:
                 break
 

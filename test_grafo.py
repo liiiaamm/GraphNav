@@ -60,8 +60,11 @@ for a in aristas:
 
 
 # Dijkstra y camino mínimo con peso constante
-acm=grafo_pesado.dijkstra(G,peso_constante,1)
-print(acm)
+from grafo_pesado import NoWayFoundError as NoWay
+try:
+    acm=grafo_pesado.dijkstra(G,peso_constante,7)
+except NoWay as e:
+    print(e)
 
 camino=grafo_pesado.camino_minimo(G,peso_constante,1,6)
 print(camino)

@@ -61,9 +61,6 @@ class AdressNotFoundError(Exception):
     pass
 
 
-############## Parte 2 ##############
-
-
 def conversion_to_number(pattern: str, x: str) -> Optional[float]:
     """
     Convierte una cadena que representa coordenadas en grados, minutos y segundos
@@ -218,10 +215,9 @@ def dibuja_grafo(graph: nx.MultiDiGraph, path: List[int]) -> None:
 
 
 def busca_direccion(direccion:str, callejero:pd.DataFrame) -> Tuple[float,float]:
-    """ Función que busca una dirección, dada en el formato
-        calle, numero
-    en el DataFrame callejero de Madrid y devuelve el par (latitud, longitud) en grados de la
-    hubicación geográfica de dicha dirección
+    """ 
+    Función que busca una dirección, dada en el formato calle, numeroen el DataFrame callejero de
+    Madrid y devuelve el par (latitud, longitud) en grados de la hubicación geográfica de dicha dirección
     
     Args:
         direccion (str): Nombre completo de la calle con número, en formato "Calle, num"
@@ -336,7 +332,7 @@ def carga_grafo() -> nx.MultiDiGraph:
 
 
 def procesa_grafo(multidigrafo:nx.MultiDiGraph) -> nx.DiGraph:
-    """ Función que recupera el quiver de calles de Madrid de OpenStreetMap.
+    """ Función que procesa el grafo de calles de Madrid de OpenStreetMap.
     Args:
         multidigrafo: multidigrafo de las calles de Madrid obtenido de OpenStreetMap.
     Returns:
