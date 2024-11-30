@@ -57,12 +57,12 @@ def step_with_header(
         Optional[Any]: El resultado de `function_to_call` si se proporciona,
         de lo contrario, None.
     """
-    os.system('cls' if os.name == 'nt' else 'clear')  # Limpia la consola dependiendo del sistema operativo
-    print(GPS)  # Imprime el encabezado estático
-    print(f"{Azul}{step_message}{Normal}")  # Muestra el mensaje del paso actual
+    os.system('cls' if os.name == 'nt' else 'clear')  
+    print(GPS)
+    print(f"{Azul}{step_message}{Normal}")
     try:
         if function_to_call:
-            result = function_to_call(*args, **kwargs)  # Llama a la función con los argumentos proporcionados
+            result = function_to_call(*args, **kwargs)
             return result  
     except:
         return None
@@ -77,10 +77,9 @@ def check_input(ubi_input: str) -> str:
     Returns:
         str: La entrada validada en el formato correcto "Calle,número".
     """
-    while "," not in ubi_input:  # Asegurarse de que la entrada contenga una coma
+    while "," not in ubi_input:  
         print(f"{Rojo}El formato debe de ser: 'Calle,número'{Normal}")
         ubi_input = input(f"{Rojo}Introduce la ubicación de nuevo: {Normal}")
-        # Validación secundaria: el número después de la coma debe ser numérico
         while "," in ubi_input and (not ubi_input.split(",")[1].strip().isnumeric()):
             print(f"{Rojo}El número a introducir debe de ser un número{Normal}")
             ubi_input = input(f"{Verde}Introduce la ubicación de nuevo:{Normal} ")
@@ -90,7 +89,8 @@ def check_input(ubi_input: str) -> str:
 def seleccion_interactiva(streetmap: pd.DataFrame) -> Tuple[List[Tuple[float, float]], str]:
     """
     Proporciona una interfaz interactiva para que el usuario seleccione ubicaciones de origen y destino,
-    valida las entradas y utiliza fuzzy search para obtener las coordenadas.
+    valida las entradas y utiliza direcciones exactas y fuzzy search para obtener las coordenadas además de
+    guardar un fichero con las últimas 5 ubicaciones introducidas
 
     Args:
         streetmap (pd.DataFrame): Un DataFrame que contiene información de las calles.
@@ -100,23 +100,19 @@ def seleccion_interactiva(streetmap: pd.DataFrame) -> Tuple[List[Tuple[float, fl
             - Una lista de coordenadas (latitud, longitud) para las ubicaciones seleccionadas.
             - La última entrada de ubicación validada por el usuario.
     """
-    # Archivo donde se almacenan las ubicaciones recientes
     path_file = "results/latest_results.txt"
     directory = os.path.dirname(path_file)
 
-    # Crear el directorio si no existe
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    # Crear el archivo si no existe
     if not os.path.isfile(path_file):
         with open(path_file, "w") as file:
             pass
 
-    # Mostrar ubicaciones buscadas recientemente
     print(f"{Azul}Últimas ubicaciones buscadas...{Normal}")
     with open(path_file, "r") as p:
-        for line in p.readlines()[::-1]:  # Leer y mostrar líneas en orden inverso
+        for line in p.readlines()[::-1]:  
             print(f"{Azul}{line.rstrip()}{Normal}")
 
     ubications = ["origen", "destino"]
@@ -124,7 +120,6 @@ def seleccion_interactiva(streetmap: pd.DataFrame) -> Tuple[List[Tuple[float, fl
 
     for ubication in ubications:
         while True:
-            # Solicitar entrada de ubicación al usuario
             if ubication == "origen":
                 print("Si desea salir del GPS, pulse intro sin escribir nada")
                 ubi_input = input(f"{Verde}Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): {Normal}")
@@ -137,13 +132,11 @@ def seleccion_interactiva(streetmap: pd.DataFrame) -> Tuple[List[Tuple[float, fl
 
             ubi_input = ubi_input.strip()
 
-            # Validar el formato de la entrada
             ubi_input = check_input(ubi_input)
             ubi_input = ubi_input.upper()
             try:
                 choice = str()
                 while choice != "S":
-                    # Realizar búsqueda fuzzy y obtener coordenadas
                     coord, street_well_wroten = c.fuzzy_search(ubi_input, streetmap)
                     if street_well_wroten == "Calle_Iterada":
                         ubi_to_csv = ubi_input.upper() 
@@ -156,28 +149,23 @@ def seleccion_interactiva(streetmap: pd.DataFrame) -> Tuple[List[Tuple[float, fl
                     ubi_input = check_input(ubi_input)
                     ubi_input = ubi_input.upper()
 
-                # Actualizar el archivo de ubicaciones recientes
                 with open(path_file, "r") as p:
                     lines = p.readlines()
 
-                # Remove newline characters and ensure uniqueness
                 lines = [line.strip() for line in lines]
 
-                # Add the new route if it's not already in the list
                 if ubi_to_csv not in lines:
                     lines.append(ubi_to_csv)
 
-                # Keep only the last 5 routes
                 lines = lines[-5:]
 
-                # Write the updated list back to the file
                 with open(path_file, "w") as p:
                     for line in lines:
                         p.write(f"{line}\n")
-                coords.append(coord)  # Guardar las coordenadas seleccionadas
+                coords.append(coord)  
                 break
             except Exception as e:
-                print(f"{Rojo}Error: {e}{Normal}")  # Manejar errores y mostrar mensajes
+                print(f"{Rojo}Error: {e}{Normal}")  
 
     return coords, ubi_input  
 
@@ -195,14 +183,11 @@ def elige_modo() -> str:
             - "R" para la ruta más rápida.
             - "RS" para la ruta más rápida optimizada con señales.
     """
-    # Mostrar las opciones al usuario
     print(f"{Azul}Tendrás tres modos de ruta a escoger:{Normal}")
     print(f"{Azul}Ruta más corta, Ruta más rápida, ruta más rápida optimizando señales{Normal}")
     
-    # Solicitar la elección del usuario
     choice = input(f"{Verde}Para la más corta -> C \nPara la más rápida -> R\nPara la más rápida optimizada con señales -> RS{Normal}\n").upper()
     
-    # Validar que la entrada sea correcta
     while choice not in ["C", "R", "RS"]:
         print(f"{Azul}Introduce una opción correcta{Normal}")
         choice = input(f"{Verde}Para la más corta -> C \nPara la más rápida -> R\nPara la más rápida optimizada con señales -> RS{Normal}\n").upper()
@@ -224,32 +209,34 @@ def encontrar_nodo_acc_mas_cercano(coords: List[Tuple[float, float]], G: nx.Mult
         List[Any]: 
             Lista de nodos más cercanos a cada una de las coordenadas proporcionadas.
     """
-    closest_nodes = []  # Lista para almacenar los nodos más cercanos
+    closest_nodes = []  
     for coord in coords:
-        x, y = coord  # Desempaquetar las coordenadas (longitud, latitud)
-        nodes = G.nodes(data=True)  # Obtener los nodos del grafo con sus datos
-        closest_node = ox.nearest_nodes(G, x, y)  # Encontrar el nodo más cercano
-        closest_nodes.append(closest_node)  # Añadir el nodo más cercano a la lista
+        x, y = coord  
+        nodes = G.nodes(data=True)  
+        closest_node = ox.nearest_nodes(G, x, y)
+        closest_nodes.append(closest_node)
 
     return closest_nodes  
 
 def haversine(lat1: np.float64, lon1:np.float64, lat2:np.float64, lon2:np.float64) -> np.float64:
     """
-        Method to compute the haversite distance between 2 pair of coordinates
+    Calcula la distancia de Haversine entre dos puntos geográficos.
 
-        :param lat1: primera latitud
-        :param lon1: primera longitud
-        :param lat2: segunda latitud
-        :param lon2: segunda longitud
+    Args:
+        lat1 (np.float64): Latitud del primer punto (en grados decimales).
+        lon1 (np.float64): Longitud del primer punto (en grados decimales).
+        lat2 (np.float64): Latitud del segundo punto (en grados decimales).
+        lon2 (np.float64): Longitud del segundo punto (en grados decimales).
+
+    Returns:
+        np.float64: Distancia entre los dos puntos en kilómetros.
     """
     dLat = (lat2 - lat1) * np.pi / 180.0
     dLon = (lon2 - lon1) * np.pi / 180.0
  
-    # convertir a radianes
     lat1 = (lat1) * np.pi / 180.0
     lat2 = (lat2) * np.pi / 180.0
  
-    # aplica la fórmula
     a = (pow(np.sin(dLat / 2), 2) +
          pow(np.sin(dLon / 2), 2) *
              np.cos(lat1) * np.cos(lat2));
@@ -259,17 +246,17 @@ def haversine(lat1: np.float64, lon1:np.float64, lat2:np.float64, lon2:np.float6
     return rad * c
 
 
-def aplicar_peso_corto(G: Union[nx.Graph, nx.DiGraph], origen: object, neighbour: Any) -> float:
+def aplicar_peso_corto(G: nx.DiGraph, origen: object, neighbour: object) -> float:
     """
     Calcula el peso (distancia) entre dos nodos en un grafo. Si no existe un atributo "length"
     en la arista entre los nodos o si es `None`, calcula la distancia usando la fórmula de Haversine.
 
     Args:
         G (Union[nx.Graph, nx.DiGraph]): 
-            Grafo (no dirigido o dirigido) que contiene los nodos y aristas.
-        origen (Any): 
+            Grafo dirigido que contiene los nodos y aristas.
+        origen (object): 
             Nodo inicial.
-        neighbour (Any): 
+        neighbour (object): 
             Nodo vecino (adyacente al nodo inicial).
 
     Returns:
@@ -277,18 +264,14 @@ def aplicar_peso_corto(G: Union[nx.Graph, nx.DiGraph], origen: object, neighbour
             La distancia entre el nodo `origen` y el nodo `neighbour`.
             Puede ser la longitud especificada en la arista o la distancia calculada con Haversine.
     """
-    # Verificar si el atributo "length" está disponible en la arista
     if "length" not in G[origen][neighbour] or G[origen][neighbour]["length"] is None:
-        # Obtener las coordenadas de los nodos
-        x1 = G.nodes[origen]["y"]  # Latitud del nodo origen
-        x2 = G.nodes[origen]["x"]  # Longitud del nodo origen
-        y1 = G.nodes[neighbour]["y"]  # Latitud del nodo vecino
-        y2 = G.nodes[neighbour]["x"]  # Longitud del nodo vecino
+        x1 = G.nodes[origen]["y"]  
+        x2 = G.nodes[origen]["x"]  
+        y1 = G.nodes[neighbour]["y"]
+        y2 = G.nodes[neighbour]["x"]  
 
-        # Calcular la distancia usando Haversine
         dist = haversine(x1, x2, y1, y2)
     else:
-        # Usar la longitud especificada en la arista
         dist = G[origen][neighbour]["length"]
 
     return dist
@@ -299,43 +282,37 @@ def aplicar_peso_rapido(G: Union[nx.Graph, nx.DiGraph], origen: Any, destino: An
     y el tiempo esperado debido a semáforos en los cruces.
 
     Args:
-        G (Union[nx.Graph, nx.DiGraph]): 
+        G (nx.DiGraph): 
             El grafo que contiene los nodos y aristas.
-        origen (Any): 
+        origen (object): 
             Nodo de origen.
-        destino (Any): 
+        destino (object): 
             Nodo destino.
 
     Returns:
         float: 
             El peso calculado, considerando el tiempo esperado de viaje (en horas).
     """
-    # Calcular la distancia entre los nodos usando aplicar_peso_corto
     distance = aplicar_peso_corto(G, origen, destino)
 
-    # Determinar la velocidad máxima de la vía
     if "maxspeed" not in G[origen][destino] or G[origen][destino]["maxspeed"] is None:
-        # Usar una conversión de velocidades basada en el tipo de vía
-        conversion = c.MAX_SPEEDS  # Diccionario de tipos de calles a velocidades predeterminadas
-        street_type = G[origen][destino]["highway"]  # Obtener el tipo de vía
+        conversion = c.MAX_SPEEDS  
+        street_type = G[origen][destino]["highway"]
         
-        # Si el tipo de vía es una lista, promediar las velocidades aplicables
         if isinstance(street_type, list):
             speeds = [conversion[street] for street in street_type if street in conversion]
-            speed = np.mean(list(map(int, speeds))) if speeds else 30  # Velocidad predeterminada: 30 km/h
+            speed = np.mean(list(map(int, speeds))) if speeds else 30
         else:
-            speed = int(conversion.get(street_type, 30))  # Velocidad predeterminada: 30 km/h
+            speed = int(conversion.get(street_type, 30))
     else:
-        # Procesar el atributo maxspeed de la vía
         speeds = G[origen][destino]["maxspeed"]
-        if isinstance(speeds, list):  # Si es una lista de velocidades, calcular la media
+        if isinstance(speeds, list):
             speed = np.mean(list(map(int, speeds)))
-        elif isinstance(speeds, str) and "|" in speeds:  # Si es una cadena separada por "|", dividir y promediar
+        elif isinstance(speeds, str) and "|" in speeds:  
             speed = np.mean(list(map(int, speeds.split("|"))))
         else:
-            speed = int(speeds)  # Si es un solo valor, convertir a entero
+            speed = int(speeds)  
 
-    # Calcular el tiempo de movimiento (tiempo = distancia / velocidad)
     movement_time = distance / speed
 
     return movement_time
@@ -347,7 +324,7 @@ def aplicar_peso_rapido_sem(G:Union[nx.Graph, nx.DiGraph], origen:object, destin
     y el tiempo esperado debido a semáforos en los cruces.
 
     Args:
-        G (Union[nx.Graph, nx.DiGraph]): El grafo que contiene los nodos y aristas.
+        G (nx.DiGraph): El grafo que contiene los nodos y aristas.
         origen (object): Nodo de origen.
         destino (object): Nodo destino.
 
@@ -372,19 +349,16 @@ def calculo_rutas(coords: List[Any], graph: nx.Graph) -> List[Any]:
     Elige entre la ruta más corta, más rápida o más rápida optimizando señales de tráfico.
 
     Args:
-        coords (List[Any]): Lista de coordenadas de los puntos de inicio y destino.
+        coords (List): Lista de coordenadas de los puntos de inicio y destino.
         graph (nx.Graph): Grafo que contiene los nodos y aristas del mapa.
 
     Returns:
-        List[Any]: Lista que representa el camino calculado (secuencia de nodos).
+        List: Lista que representa el camino calculado (secuencia de nodos).
     """
-    # Permitir al usuario elegir el modo de cálculo de la ruta
     choice = elige_modo()
 
-    # Encontrar los nodos más cercanos a las coordenadas proporcionadas
     nodes = encontrar_nodo_acc_mas_cercano(coords, graph)
 
-    # Calcular la ruta en función de la elección del usuario
     try:
         if choice == "C":
             path = g.camino_minimo(graph, aplicar_peso_corto, nodes[0], nodes[1])
@@ -412,18 +386,14 @@ def calcular_grados(long1: float, lat1: float, long2: float, lat2: float) -> flo
     Returns:
         float: Azimut en grados, de 0° a 360°.
     """
-    # Convertir latitudes y longitudes de grados a radianes
     lat1, long1, lat2, long2 = map(radians, [lat1, long1, lat2, long2])
 
-    # Calcular la diferencia en la longitud
     delta_long = long2 - long1
 
-    # Calcular el azimut usando la fórmula de atan2
     x = sin(delta_long) * cos(lat2)
     y = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(delta_long)
     azimut = atan2(x, y)
 
-    # Convertir el azimut de radianes a grados y normalizar entre 0° y 360°
     azimut = degrees(azimut)
     azimut = (azimut + 360) % 360
 
@@ -443,18 +413,16 @@ def determinar_giro(bearing1: float, bearing2: float) -> str:
             - 'Izquierda' si el giro es hacia la izquierda.
             - 'Recto' si no hay cambio significativo en la dirección.
     """
-    # Calcular la diferencia mínima entre los dos azimuts
     diferencia = (bearing2 - bearing1 + 540) % 360 - 180
 
-    # Definir un umbral para considerar que no hay cambio significativo
-    umbral_recto = 5  # Puedes ajustar este valor según tus necesidades
+    umbral_recto = 5  
 
     if abs(diferencia) < umbral_recto:
-        return "Recto"  # No hay cambio de dirección significativo
+        return "Recto"
     elif diferencia > 0:
-        return "Derecha"  # Giro hacia la derecha
+        return "Derecha" 
     else:
-        return "Izquierda"  # Giro hacia la izquierda
+        return "Izquierda"
 
     
 flecha_arriba = "⬆️"
@@ -478,24 +446,19 @@ def instrucciones(path: List[int], graph: nx.Graph, max_distance: float = 100) -
             Máxima distancia (en metros) a considerar antes de decidir instrucciones.
             Por defecto es 100.
     """
-    # Obtener los nodos del camino
     study_nodes = [graph.nodes[path[j]] for j in range(len(path))]
-    # Obtener las aristas entre los nodos del camino
     streets = [graph.edges[path[j], path[j + 1]] for j in range(len(path) - 1)]
 
-    # Identificar y corregir calles sin nombre o con nombre None
     fail_index_one = [j for j, street in enumerate(streets) if "name" not in street or street["name"] is None]
     for idx in fail_index_one:
-        streets[idx]["name"] = None  # Explicitamente sin nombre
+        streets[idx]["name"] = None  
 
-    # Verificar y calcular el atributo 'distance' si no existe
     for idx, street in enumerate(streets):
         if "distance" not in street or street["distance"] is None:
             origen = path[idx]
             destino = path[idx + 1]
             street["distance"] = aplicar_peso_corto(graph, origen, destino)
 
-    # Variable para rastrear la última instrucción generada
     last_instruction = {"street": None, "distance": 0}
 
     i = 0
@@ -504,27 +467,22 @@ def instrucciones(path: List[int], graph: nx.Graph, max_distance: float = 100) -
         e_sum = 0
         j = i
 
-        # Acumular distancia mientras sea la misma calle
         while j < len(path) - 1 and streets[j]["name"] == current_street:
             e_sum += streets[j]["distance"]
             j += 1
 
-        # Obtener nombre de la calle destino
         next_street = streets[j]["name"] if j < len(streets) else "Destino final"
 
-        # Formatear nombres de calles
         current_street_formatted = current_street if current_street is not None else "calle"
         next_street_formatted = next_street if next_street is not None else "calle"
 
-        # Evitar imprimir instrucciones redundantes
         if last_instruction["street"] != current_street or abs(last_instruction["distance"] - e_sum) > 1e-2:
             print(f"{flecha_arriba}  {Azul}Sigue recto{Normal} por {Rojo}{current_street_formatted}{Normal} durante {Verde}{int(e_sum)} metros{Normal} hasta llegar a {Rojo}{next_street_formatted}.{Normal}")
             print("\n")
             last_instruction = {"street": current_street, "distance": e_sum}
 
-        i = j  # Avanzar al siguiente tramo de calle
+        i = j  
 
-        # Manejar giros si hay un cambio de calle
         if i < len(path) - 1:
             t_sum = streets[i]["distance"]
             p_degrees = calcular_grados(
@@ -569,7 +527,7 @@ def main():
         if direction == "":
             print(f"{Azul}Gracias por utilizar nuestro GPS!{Normal}")
             break
-        path = step_with_header("Calculando rutas", calculo_rutas, coords, directed_graph)  # Camino nodo
+        path = step_with_header("Calculando rutas", calculo_rutas, coords, directed_graph)  
         time.sleep(1)
         if path is not None:   
             step_with_header("Mostrando Instrucciones...", instrucciones, path, directed_graph)
