@@ -248,7 +248,7 @@ def busca_direccion(direccion:str, callejero:pd.DataFrame) -> Tuple[float,float]
     number_coincidence = street_coincidence[street_coincidence["NUMERO"] == number]
 
     if not number_coincidence.empty:
-        print(f"{Azul}Se encontró la dirección exacta: {direccion.capitalize()}{Normal}")
+        print(f"{Azul}Se encontró la dirección exacta: {direccion.upper()}{Normal}")
         return number_coincidence["LONGITUD"].iloc[0], number_coincidence["LATITUD"].iloc[0]
     else: 
         raise AdressNotFoundError(f"{Rojo}La dirección no fue encontrada de forma exacta.{Normal}")
@@ -296,7 +296,7 @@ def fuzzy_search(direccion: str, callejero: pd.DataFrame, threshold=80) -> Tuple
             if number in street_coincidence["NUMERO"].values:
                 match = street_coincidence[street_coincidence["NUMERO"] == number]
                 print(f"{Azul}Coincidencia encontrada en la calle similar: {matched_street}, {str(number)}{Normal}")
-                return (match["LONGITUD"].iloc[0],match["LATITUD"].iloc[0]), f"{matched_street}, {str(number)}{Normal}"
+                return (match["LONGITUD"].iloc[0],match["LATITUD"].iloc[0]), f"{matched_street}, {str(number)}"
             else:
                 # Buscar el número más cercano
                 street_coincidence["distance"] = abs(street_coincidence["NUMERO"] - number)

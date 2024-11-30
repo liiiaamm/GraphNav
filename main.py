@@ -157,16 +157,23 @@ def seleccion_interactiva(streetmap: pd.DataFrame) -> Tuple[List[Tuple[float, fl
                     ubi_input = ubi_input.upper()
 
                 # Actualizar el archivo de ubicaciones recientes
-                with open(path_file, "r+") as p:
-                    lines = p.readlines()  # Leer todas las líneas existentes
-                    if len(lines) >= 5:  # Limitar a 5 líneas
-                        lines = lines[1:]  # Eliminar la más antigua
-                    if ubi_to_csv+"\n" not in lines:  # Verificar si ya existe
-                        lines.append(ubi_to_csv + "\n")
-                    p.seek(0)  # Volver al inicio del archivo
-                    p.writelines(lines)  # Escribir las líneas actualizadas
-                    p.truncate()  # Eliminar contenido residual si existe
+                with open(path_file, "r") as p:
+                    lines = p.readlines()
 
+                # Remove newline characters and ensure uniqueness
+                lines = [line.strip() for line in lines]
+
+                # Add the new route if it's not already in the list
+                if ubi_to_csv not in lines:
+                    lines.append(ubi_to_csv)
+
+                # Keep only the last 5 routes
+                lines = lines[-5:]
+
+                # Write the updated list back to the file
+                with open(path_file, "w") as p:
+                    for line in lines:
+                        p.write(f"{line}\n")
                 coords.append(coord)  # Guardar las coordenadas seleccionadas
                 break
             except Exception as e:
@@ -436,16 +443,19 @@ def determinar_giro(bearing1: float, bearing2: float) -> str:
             - 'Izquierda' si el giro es hacia la izquierda.
             - 'Recto' si no hay cambio significativo en la dirección.
     """
-    # Calcular la diferencia entre los dos azimuts
-    diferencia = (bearing2 - bearing1 + 360) % 360
+    # Calcular la diferencia mínima entre los dos azimuts
+    diferencia = (bearing2 - bearing1 + 540) % 360 - 180
 
-    # Determinar la dirección del giro
-    if diferencia == 0:
-        return "Recto"  # No hay cambio de dirección
-    elif diferencia < 180:
+    # Definir un umbral para considerar que no hay cambio significativo
+    umbral_recto = 5  # Puedes ajustar este valor según tus necesidades
+
+    if abs(diferencia) < umbral_recto:
+        return "Recto"  # No hay cambio de dirección significativo
+    elif diferencia > 0:
         return "Derecha"  # Giro hacia la derecha
     else:
-        return "Izquierda"
+        return "Izquierda"  # Giro hacia la izquierda
+
     
 flecha_arriba = "⬆️"
 flecha_derecha = "➡️"
