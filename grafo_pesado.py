@@ -152,57 +152,62 @@ def prim(G: nx.Graph, peso: Callable[[nx.Graph, object, object], float]) -> Dict
         Dict[object, object]: Diccionario que indica el padre de cada nodo en el Árbol Abarcador Mínimo.
         Los nodos raíces tendrán `None` como padre.
     """
-    padre = {v: None for v in G.nodes}
-    visitado = set()
-    heap = []
-    contador = 0  
-#Osamos un heap también para controlar el orden de los nodos
-    nodo_inicial = list(G.nodes)[0]
-    heappush(heap, (0, contador, nodo_inicial))  
-    contador += 1
-
-    while heap:
-        peso_actual, _, nodo_actual = heappop(heap)
-
-        if nodo_actual in visitado:
-            continue
-        #Se añaden los nodos visitados a la lista
-        visitado.add(nodo_actual)
-        #Se observan los vecinos y se escoge el de menor peso
-        for vecino in G.neighbors(nodo_actual):
-            if vecino not in visitado:
-                w = peso(G, nodo_actual, vecino)
-                heappush(heap, (w, contador, vecino))
-                contador += 1
-                if padre[vecino] is None or w < peso(G, padre[vecino], vecino):
-                    padre[vecino] = nodo_actual
+    padre = {}
+    try:
+        if not G.nodes:
+            return padre 
+        visitado = set()
+        heap = []
+        contador = 0
+        #Se itera sobre todos los nodos (por si es un árbol)
+        for nodo_inicial in G.nodes:
+            if nodo_inicial in visitado:
+                continue
+            padre[nodo_inicial] = None
+            heappush(heap, (0, contador, nodo_inicial))
+            contador += 1
+            while heap:
+                try:
+                    peso_actual, _, nodo_actual = heappop(heap)
+                except IndexError:
+                    print("El nodo no tiene peso asignado")
+                    break  #Si está vacío
+                if nodo_actual in visitado:
+                    continue
+                #Se añaden los nodos visitados al total
+                visitado.add(nodo_actual)
+                #Se observan los vecinos y escogemos el de menor peso
+                for vecino in G.neighbors(nodo_actual):
+                    if vecino not in visitado:
+                        try:
+                            w = peso(G, nodo_actual, vecino)
+                        except Exception as e:
+                            print(f"Error al calcular el peso entre dos nodos")
+                            continue
+                        heappush(heap, (w, contador, vecino))
+                        contador += 1
+                        if vecino not in padre or (padre[vecino] is not None and w < peso(G, padre[vecino], vecino)):
+                            padre[vecino] = nodo_actual
+    except Exception as e:
+        print(f"Ocurrió un error inesperado: {e}")
     return padre
 
 class UnionFind:
-    """
-    Se ha investigado e implementado una clase para el algoritmo de kruskal
-    que permite unir y buscar elementos sin hacer un diccionario que crezca exponencialmente
-    """
+    """Clase Union-Find para el algoritmo de Kruskal."""
     def __init__(self, elementos):
         self.padre = {x: x for x in elementos}
         self.rango = {x: 0 for x in elementos}
 
     def find(self, x):
-        """
-        Encuentra el representante del conjunto al que pertenece x.
-        Aplica compresión de caminos para optimización.
-        """
+        """Encuentra el representante del conjunto al que pertenece x."""
         if self.padre[x] != x:
             self.padre[x] = self.find(self.padre[x])
         return self.padre[x]
 
     def union(self, x, y):
-        """
-        Une los conjuntos de x e y. Usa unión por rango para optimización.
-        """
+        """Une los conjuntos de x e y."""
         raiz_x = self.find(x)
         raiz_y = self.find(y)
-
         if raiz_x != raiz_y:
             if self.rango[raiz_x] > self.rango[raiz_y]:
                 self.padre[raiz_y] = raiz_x
@@ -211,7 +216,6 @@ class UnionFind:
             else:
                 self.padre[raiz_y] = raiz_x
                 self.rango[raiz_x] += 1
-
 
 def kruskal(G: nx.Graph, peso: Callable[[nx.Graph, object, object], float]) -> List[Tuple[object, object]]:
     """
@@ -226,21 +230,23 @@ def kruskal(G: nx.Graph, peso: Callable[[nx.Graph, object, object], float]) -> L
         List[Tuple[object, object]]: Lista de aristas que forman el Árbol Abarcador Mínimo.
     """
     mst = []
-
-    #Ordenamos las aristas por peso
-    aristas_ordenadas = sorted(G.edges, key=lambda edge: peso(G, edge[0], edge[1]))
-
-    #Usamos la clase mencionada antes
-    uf = UnionFind(G.nodes)
-
-    #Si los nodos están en el mismo conjunto lo sune
-    for u, v in aristas_ordenadas:
-        if uf.find(u) != uf.find(v): 
-            uf.union(u, v) 
-            mst.append((u, v))  
-
-            #Si el MST tiene aristas -1 se da como completo
-            if len(mst) == len(G.nodes) - 1:
-                break
-
+    try:
+        if not G.edges:
+            #Devuelve una lista vacía si el grafo no tiene aristas
+            return mst  
+        #Se ordenan las aristas por peso
+        aristas_ordenadas = sorted(G.edges, key=lambda edge: peso(G, edge[0], edge[1]))
+        uf = UnionFind(G.nodes)
+        #Se itera sobre las aristas ordenadas
+        for u, v in aristas_ordenadas:
+            try:
+                if uf.find(u) != uf.find(v): 
+                    uf.union(u, v) 
+                    mst.append((u, v))  
+            except KeyError as e:
+                print(f"Error: nodo no encontrado en Union-Find.")
+            except Exception as e:
+                print(f"Error al procesar la arista ")
+    except Exception as e:
+        print(f"Ocurrió un error inesperado: {e}")
     return mst

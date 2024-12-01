@@ -80,6 +80,7 @@ print(camino_rng)
 
 if(not dirigido):
     # Árbol abarcador mínimo
+    print("AAA")
     aam=grafo_pesado.kruskal(G,peso_constante)
     print(aam)
 
