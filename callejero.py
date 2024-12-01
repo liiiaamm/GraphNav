@@ -150,10 +150,8 @@ def dibuja_grafo(graph: nx.MultiDiGraph, path: List[int]) -> None:
     Returns:
         None
     """
-    # Asegurarse de que los nodos del path están en el grafo
     valid_path = [node for node in path if node in graph.nodes]
 
-    # Obtener los colores para las aristas
     edge_colors = []
     edge_widths = []
     edges = list(graph.edges(keys=True))
@@ -161,27 +159,25 @@ def dibuja_grafo(graph: nx.MultiDiGraph, path: List[int]) -> None:
 
     for u, v, key in edges:
         if (u, v) in path_edges or (v, u) in path_edges:
-            edge_colors.append("red")  # Resaltar las aristas del camino en rojo
-            edge_widths.append(2)      # Ancho de línea más grueso para el camino
+            edge_colors.append("red")  
+            edge_widths.append(2)      
         else:
-            edge_colors.append("gray")  # Resto de las aristas en gris
-            edge_widths.append(0.5)     # Ancho de línea por defecto
+            edge_colors.append("gray")  
+            edge_widths.append(0.5)     
 
-    # Obtener los colores y tamaños para los nodos
     node_colors = []
     node_sizes = []
     for node in graph.nodes():
         if node == valid_path[0]:
-            node_colors.append("green")  # Nodo inicial en verde
-            node_sizes.append(100)       # Tamaño más grande
+            node_colors.append("green")  
+            node_sizes.append(100)       
         elif node == valid_path[-1]:
-            node_colors.append("red")    # Nodo final en rojo
-            node_sizes.append(100)       # Tamaño más grande
+            node_colors.append("red")    
+            node_sizes.append(100)       
         else:
-            node_colors.append("gray")   # Otros nodos en gris o no mostrarlos
-            node_sizes.append(0)         # Tamaño cero para no mostrarlos
+            node_colors.append("gray")   
+            node_sizes.append(0)         
 
-    # Dibujar el grafo sin mostrarlo aún
     fig, ax = ox.plot_graph(
         graph,
         node_color=node_colors,
@@ -192,23 +188,18 @@ def dibuja_grafo(graph: nx.MultiDiGraph, path: List[int]) -> None:
         close=False
     )
 
-    # Ajustar los límites del eje para centrarse en el camino
-    # Obtener las coordenadas de los nodos en el camino
     x_values = [graph.nodes[node]['x'] for node in valid_path]
     y_values = [graph.nodes[node]['y'] for node in valid_path]
 
-    # Calcular el bounding box con un margen
-    margin = 0.001  # Puedes ajustar este valor según sea necesario
+    margin = 0.001  
     min_x = min(x_values) - margin
     max_x = max(x_values) + margin
     min_y = min(y_values) - margin
     max_y = max(y_values) + margin
 
-    # Establecer los límites del eje
     ax.set_xlim(min_x, max_x)
     ax.set_ylim(min_y, max_y)
 
-    # Mostrar el gráfico
     plt.show()
 
 
@@ -270,6 +261,7 @@ def fuzzy_search(direccion: str, callejero: pd.DataFrame, threshold=80) -> Tuple
         AdressNotFoundError: Si no se encuentra una coincidencia suficiente.
     """
     try:
+        callejero = callejero.copy()
         # Intentamos la búsqueda exacta
         coords = busca_direccion(direccion, callejero)
         return coords, "Calle_Iterada"  # Devolvemos también la dirección original
@@ -288,13 +280,11 @@ def fuzzy_search(direccion: str, callejero: pd.DataFrame, threshold=80) -> Tuple
             matched_street = best_match[0]
             street_coincidence = callejero[callejero["total_street"] == matched_street].copy()
  
-            # Comprobar si el número exacto está disponible
             if number in street_coincidence["NUMERO"].values:
                 match = street_coincidence[street_coincidence["NUMERO"] == number]
                 print(f"{Azul}Coincidencia encontrada en la calle similar: {matched_street}, {str(number)}{Normal}")
                 return (match["LONGITUD"].iloc[0],match["LATITUD"].iloc[0]), f"{matched_street}, {str(number)}"
             else:
-                # Buscar el número más cercano
                 street_coincidence["distance"] = abs(street_coincidence["NUMERO"] - number)
                 closest_match = street_coincidence.loc[street_coincidence["distance"].idxmin()]
                 print(f"{Azul}Coincidencia encontrada en la calle similar: {matched_street}, {str(closest_match['NUMERO'])}{Normal}")
@@ -342,8 +332,8 @@ def procesa_grafo(multidigrafo:nx.MultiDiGraph) -> nx.DiGraph:
     if not isinstance(multidigrafo, nx.MultiDiGraph):
         print(f"{Rojo}El argumento 'multidigrafo' debe ser un nx.MultiDiGraph.{Normal}")
     directed_graph = ox.convert.to_digraph(multidigrafo)
-    loops = list(nx.selfloop_edges(directed_graph))  # Encuentra los bucles
-    directed_graph.remove_edges_from(loops)  # Elimina todos los bucles de una vez
+    loops = list(nx.selfloop_edges(directed_graph))  
+    directed_graph.remove_edges_from(loops)  
 
     if not isinstance(directed_graph, nx.DiGraph):
         print(f"{Rojo}No se construyo bien{Normal}")
@@ -361,18 +351,16 @@ def explora_grafo(graph:nx.DiGraph)->None:
     Returns:
         None: Imprime la información en la consola y muestra el grafo visualizado.
     """
-    #Exploración de los nodos
     print("Exploramos los nodos: \n")
     print(f"El total de nodos es: {graph.number_of_nodes()}")
     
-    #Atributos de nodo
     for node,data in graph.nodes(data=True):
         n_example = (node,data)
         break
     print(f"Atributos de un nodo de ejemplo (Nodo {n_example[0]}): {n_example[1]}")
     node_pos = [n for n,data in graph.nodes(data=True) if "x" not in data or "y" not in data]
     if node_pos:
-        print(f"El número de nodos que no tiene infomración geográfica es: {len(node_pos)}")
+        print(f"El número de nodos que no tiene información geográfica es: {len(node_pos)}")
 
     else:
         print("Todos los nodos tienen información geográfica")
@@ -380,7 +368,6 @@ def explora_grafo(graph:nx.DiGraph)->None:
     print("Exploramos las aristas: \n")
     print(f"El total de aristas es: {graph.number_of_edges()}")
     
-    #Atributos de nodo
     for u, v, data in graph.edges(data=True):
         e_example = (u,v,data)
         break

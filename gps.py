@@ -120,16 +120,11 @@ def seleccion_interactiva(streetmap: pd.DataFrame) -> Tuple[List[Tuple[float, fl
 
     for ubication in ubications:
         while True:
-            if ubication == "origen":
-                print("Si desea salir del GPS, pulse intro sin escribir nada")
-                ubi_input = input(f"{Verde}Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): {Normal}")
-                if ubi_input == "":
-                    coords = None
-                    return coords, ubi_input
-                
-            elif ubication == "destino":
-                ubi_input = input(f"{Verde}Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): {Normal}")
-
+            
+            ubi_input = input(f"{Verde}Introduce la ubicacion {ubication} en el formato 'Calle,Número' (ejemplo: Calle Mayor,5): {Normal}")
+            if ubi_input == "":
+                coords = None
+                return coords, ubi_input
             ubi_input = ubi_input.strip()
 
             ubi_input = check_input(ubi_input)
@@ -186,11 +181,11 @@ def elige_modo() -> str:
     print(f"{Azul}Tendrás tres modos de ruta a escoger:{Normal}")
     print(f"{Azul}Ruta más corta, Ruta más rápida, ruta más rápida optimizando señales{Normal}")
     
-    choice = input(f"{Verde}Para la más corta -> C \nPara la más rápida -> R\nPara la más rápida optimizada con señales -> RS{Normal}\n").upper()
+    choice = input(f"{Verde}Para la más corta -> C \nPara la más rápida -> R\nPara la más rápida optimizada con semáforos -> RS{Normal}\n").upper()
     
     while choice not in ["C", "R", "RS"]:
         print(f"{Azul}Introduce una opción correcta{Normal}")
-        choice = input(f"{Verde}Para la más corta -> C \nPara la más rápida -> R\nPara la más rápida optimizada con señales -> RS{Normal}\n").upper()
+        choice = input(f"{Verde}Para la más corta -> C \nPara la más rápida -> R\nPara la más rápida optimizada con semáforos -> RS{Normal}\n").upper()
     
     return choice 
 
