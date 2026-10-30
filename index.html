@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GraphNav: Dijkstra across Madrid</title>
+<meta name="description" content="Watch Dijkstra's algorithm, and A*, search 12,000 intersections of central Madrid for the shortest or fastest route, then follow the turn-by-turn directions.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="web/riso.css">
+</head>
+<body>
+
+<main class="print">
+  <section class="map-wrap" aria-label="Map of central Madrid">
+    <canvas id="map"></canvas>
+    <div class="zoom">
+      <button id="zoomIn" type="button" aria-label="Zoom in">+</button>
+      <button id="zoomOut" type="button" aria-label="Zoom out">−</button>
+    </div>
+    <p class="attrib">Streets © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors</p>
+  </section>
+
+  <aside class="panel">
+    <h1>Dijkstra across Madrid</h1>
+    <p class="lede">Every street inside the M-30 is a weighted edge. Pick two places and watch the algorithm spread out from the start until it reaches the end.</p>
+
+    <div class="pick">
+      <label><span class="pin a">A</span><select id="from" aria-label="Start"></select></label>
+      <label><span class="pin b">B</span><select id="to" aria-label="Destination"></select></label>
+      <p class="hint" id="hint">Or click the map: first click sets A, second sets B.</p>
+    </div>
+
+    <fieldset class="opts">
+      <legend>Optimise for</legend>
+      <div class="chips" id="modes">
+        <button type="button" data-mode="short" aria-pressed="false">Distance</button>
+        <button type="button" data-mode="fast" aria-pressed="true">Time</button>
+        <button type="button" data-mode="junction" aria-pressed="false">Time, slow junctions</button>
+      </div>
+    </fieldset>
+    <fieldset class="opts">
+      <legend>Search with</legend>
+      <div class="chips" id="algos">
+        <button type="button" data-algo="dijkstra" aria-pressed="true">Dijkstra</button>
+        <button type="button" data-algo="astar" aria-pressed="false">A*</button>
+      </div>
+    </fieldset>
+
+    <button class="go" id="go" type="button" disabled>Loading streets…</button>
+
+    <dl class="numbers" id="numbers" hidden>
+      <div><dt>Intersections explored</dt><dd id="nExplored">–</dd></div>
+      <div><dt>Route length</dt><dd id="nDist">–</dd></div>
+      <div><dt>Time, no traffic</dt><dd id="nTime">–</dd></div>
+    </dl>
+    <p class="compare" id="compare" hidden></p>
+
+    <ol class="directions" id="directions" aria-label="Turn-by-turn directions"></ol>
+  </aside>
+</main>
+
+<section class="notes">
+  <div>
+    <h2>What you're watching</h2>
+    <p>Dijkstra keeps a priority queue of intersections ordered by their distance from A, always settling the closest one next. The pink spreading across the map is that order, played back. It is guaranteed to find the best route, but it searches in every direction at once, including away from B.</p>
+    <p>A* adds a guess of the distance still to go, the straight line to B, to each intersection's priority. The guess never overestimates, so the route is still optimal, but the search leans towards B and settles far fewer intersections.</p>
+  </div>
+  <div>
+    <h2>The weights</h2>
+    <p><strong>Distance</strong> uses each street's length in metres. <strong>Time</strong> divides it by the speed limit, or a default by road type when OpenStreetMap has none: 30 km/h on residential streets, 50 on avenues, 100 on the M-30. <strong>Slow junctions</strong> adds an expected 24 seconds (an 80 % chance of a 30-second wait) at every intersection on a major road.</p>
+    <p>That last mode fixes a bug in the original Python version, which looked for traffic signals in the road type of each street. OpenStreetMap stores signals on intersections, not streets, so the penalty never applied and the mode returned the same route as plain time.</p>
+    <p class="links"><a href="https://github.com/liiiaamm/GraphNav">Source on GitHub</a></p>
+  </div>
+</section>
+
+<footer>
+  <p>Discrete Mathematics coursework at Comillas ICAI by Liam Esgueva and Sergio Fernández, rebuilt for the browser by <a href="https://github.com/liiiaamm">Liam Esgueva</a>. Street data from OpenStreetMap (ODbL), 12,106 intersections.</p>
+</footer>
+
+<script src="web/nav.js"></script>
+</body>
+</html>

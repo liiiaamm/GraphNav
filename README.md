@@ -4,6 +4,31 @@
 
 A Python coursework project connecting implementations of Dijkstra, Prim, and Kruskal with an interactive navigation prototype using OpenStreetMap data.
 
+**[Try it in your browser →](https://liiiaamm.github.io/GraphNav/)** Pick two places in central Madrid and watch Dijkstra, or A*, search 12,106 intersections inside the M-30, then follow the turn-by-turn directions.
+
+[![Dijkstra spreading across Madrid's street graph](docs/preview.png)](https://liiiaamm.github.io/GraphNav/)
+
+## The browser version
+
+The street graph is built from OpenStreetMap: every drivable way inside the M-30, with its one-way rules, speed limit and name, contracted so that each node is an intersection (`scripts/build_web_graph.py`, output `web/madrid.json`, 0.5 MB compressed). The page (`index.html`, `web/nav.js`) runs the same three weightings as `gps.py`:
+
+- **Distance:** street length in metres.
+- **Time:** length divided by the speed limit, or a default by road type (the `MAX_SPEEDS` table in `callejero.py`).
+- **Time, slow junctions:** adds an expected 24 s (80 % × 30 s) at every intersection on a major road.
+
+It also adds A*, with the straight-line distance (or straight-line time at the top speed) as the heuristic. On ICAI to the Bernabéu by time, Dijkstra settles 4,507 intersections and A* 2,058 for the same route; by distance, A* needs 732.
+
+**A bug found on the way.** `aplicar_peso_rapido_sem` in `gps.py` looked for `"crossing"` in each edge's `highway` tag, but OpenStreetMap tags traffic signals and crossings on nodes, not ways. The penalty never applied, so the "with traffic lights" mode always returned the same route as the plain fast mode. The browser version applies the junction delay on nodes instead.
+
+```bash
+# rebuild the graph from an OpenStreetMap GeoJSON of Madrid
+curl -LO https://raw.githubusercontent.com/amoraschi/spain-cities-geojson/master/cities/madrid.geojson
+python scripts/build_web_graph.py madrid.geojson
+python -m http.server   # then open http://localhost:8000
+```
+
+Street data © OpenStreetMap contributors, available under the Open Database License.
+
 ## Features
 
 - Shortest-path trees and route reconstruction with Dijkstra.

@@ -1,0 +1,138 @@
+/* Two-colour risograph print: Riso Blue for the city, Fluorescent Pink for the search.
+   Inks multiply where they overlap, the way they would on paper. */
+:root {
+  --paper: #f4f5f1;
+  --blue: #0078bf;
+  --pink: #ff48b0;
+  --ink: #142a3b;
+  --ink-soft: #4b5d6b;
+  --font: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+/* paper grain over everything */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.3 0 0 0 0 0.35 0 0 0 0.16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+a { color: var(--blue); text-underline-offset: 0.18em; }
+a:hover { color: var(--pink); }
+:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
+
+.print { display: grid; grid-template-columns: minmax(0, 1fr) 25rem; min-height: 100vh; }
+
+.map-wrap { position: relative; min-height: 100vh; border-right: 3px solid var(--ink); }
+#map { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+.zoom { position: absolute; top: 1rem; left: 1rem; display: grid; gap: 0.4rem; }
+.zoom button {
+  width: 2.4rem; height: 2.4rem;
+  font: 700 1.3rem var(--font);
+  background: var(--paper); color: var(--ink);
+  border: 2px solid var(--ink); border-radius: 50%;
+  cursor: pointer;
+}
+.zoom button:hover { background: var(--pink); }
+.attrib { position: absolute; right: 0.75rem; bottom: 0.5rem; margin: 0; font-size: 0.75rem; color: var(--ink-soft); background: rgba(244, 245, 241, 0.85); padding: 0.1rem 0.4rem; }
+
+.panel { padding: clamp(1.5rem, 3vw, 2.25rem); display: flex; flex-direction: column; gap: 1.1rem; max-height: 100vh; overflow-y: auto; position: sticky; top: 0; }
+
+h1 {
+  margin: 0;
+  font-size: clamp(2.6rem, 4.6vw, 3.8rem);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  color: var(--blue);
+  /* misregistered second ink pass */
+  text-shadow: 3px 2px 0 rgba(255, 72, 176, 0.85);
+}
+.lede { margin: 0; color: var(--ink-soft); }
+
+.pick { display: grid; gap: 0.6rem; }
+.pick label { display: grid; grid-template-columns: 2.2rem 1fr; align-items: center; gap: 0.6rem; }
+.pin {
+  display: grid; place-items: center;
+  width: 2.2rem; height: 2.2rem; border-radius: 50%;
+  font-weight: 800; color: var(--paper);
+}
+.pin.a { background: var(--blue); }
+.pin.b { background: var(--pink); color: var(--ink); }
+select {
+  width: 100%;
+  font: 600 1rem var(--font);
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 0.5rem 0.9rem;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%), linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 55%, calc(100% - 12px) 55%;
+  background-size: 6px 6px;
+  background-repeat: no-repeat;
+}
+.hint { margin: 0; font-size: 0.88rem; color: var(--ink-soft); }
+
+.opts { border: 0; padding: 0; margin: 0; }
+.opts legend { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.4rem; padding: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.chips button {
+  font: 600 0.95rem var(--font);
+  color: var(--ink);
+  background: transparent;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  cursor: pointer;
+}
+.chips button[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: var(--paper); }
+
+.go {
+  font: 800 1.15rem var(--font);
+  color: var(--ink);
+  background: var(--pink);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  padding: 0.75rem 1.2rem;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--blue);
+}
+.go:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--blue); }
+.go:disabled { opacity: 0.55; cursor: progress; }
+
+.numbers { margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; border-top: 3px solid var(--ink); padding-top: 0.9rem; }
+.numbers dt { font-size: 0.78rem; color: var(--ink-soft); line-height: 1.2; }
+.numbers dd { margin: 0.2rem 0 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.compare { margin: 0; font-size: 0.95rem; background: rgba(255, 72, 176, 0.18); padding: 0.6rem 0.8rem; border-radius: 8px; }
+
+.directions { list-style: none; margin: 0; padding: 0; counter-reset: step; display: grid; gap: 0.15rem; }
+.directions li { display: grid; grid-template-columns: 1.8rem 1fr auto; gap: 0.6rem; align-items: baseline; padding: 0.45rem 0; border-bottom: 1px dashed rgba(20, 42, 59, 0.25); font-size: 0.96rem; }
+.directions .turn { font-weight: 800; color: var(--blue); text-align: center; font-size: 1.1rem; }
+.directions .dist { color: var(--ink-soft); font-variant-numeric: tabular-nums; font-size: 0.88rem; white-space: nowrap; }
+.directions strong { font-weight: 700; }
+
+.notes { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1.5rem, 4vw, 4rem); max-width: 76rem; margin: 0 auto; padding: clamp(3rem, 7vw, 5rem) clamp(1.25rem, 4vw, 2.5rem) 2rem; }
+.notes h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1; margin: 0 0 0.9rem; color: var(--blue); text-shadow: 2px 1px 0 rgba(255, 72, 176, 0.7); }
+.notes p { max-width: 36rem; }
+.links { font-weight: 700; }
+footer { max-width: 76rem; margin: 0 auto; padding: 1.25rem clamp(1.25rem, 4vw, 2.5rem) 2.5rem; border-top: 3px solid var(--ink); color: var(--ink-soft); font-size: 0.92rem; }
+
+@media (max-width: 900px) {
+  .print { grid-template-columns: 1fr; }
+  .map-wrap { min-height: 62vh; border-right: 0; border-bottom: 3px solid var(--ink); }
+  .panel { max-height: none; position: static; }
+  .notes { grid-template-columns: 1fr; }
+}
